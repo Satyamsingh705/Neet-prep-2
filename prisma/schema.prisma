@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Student {
+  id               String               @id @default(cuid())
+  username         String               @unique
+  passwordHash     String
+  displayName      String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  isActive         Boolean              @default(true)
+  attempts         Attempt[]
+  liveAttempts     LiveTestAttempt[]
+  registrations    BattleRegistration[]
+}
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Question {
+  id             String         @id @default(cuid())
+  subject        Subject
+  chapter        String
+  type           QuestionType
+  prompt         String?
+  options        Json?
+  imagePath      String?
+  correctAnswers Json
+  answerPolicy   AnswerPolicy   @default(SINGLE)
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  testQuestions  TestQuestion[]
+
+  @@index([subject])
+  @@index([chapter])
+}
+
+model Test {
+  id                      String         @id @default(cuid())
+  name                    String
+  description             String?
+  durationMinutes         Int
+  totalQuestions          Int
+  totalEvaluatedQuestions Int
+  correctMarks            Int            @default(4)
+  incorrectMarks          Int            @default(-1)
+  unansweredMarks         Int            @default(0)
+  mode                    TestMode       @default(CUSTOM)
+  published               Boolean        @default(true)
+  config                  Json?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  testCode                String?        @unique
+  attempts                Attempt[]
+  testQuestions           TestQuestion[]
+  liveTests               LiveTest[]
+
+  @@index([published])
+}
+
+model TestQuestion {
+  id         String   @id @default(cuid())
+  testId     String
+  questionId String
+  orderIndex Int
+  subject    Subject
+  section    String
+  chapter    String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  test       Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, orderIndex])
+  @@index([testId])
+  @@index([questionId])
+  @@index([subject])
+  @@index([chapter])
+}
+
+model Attempt {
+  id                    String        @id @default(cuid())
+  testId                String
+  studentId             String?
+  studentName           String?
+  status                AttemptStatus @default(IN_PROGRESS)
+  startedAt             DateTime      @default(now())
+  submittedAt           DateTime?
+  lastSavedAt           DateTime      @updatedAt
+  answers               Json
+  currentQuestionIndex  Int           @default(1)
+  tabSwitchCount        Int           @default(0)
+  totalTimeSpentSeconds Int           @default(0)
+  result                Json?
+  student               Student?      @relation(fields: [studentId], references: [id])
+  test                  Test          @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
+  @@index([studentId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model LiveTest {
+  id               String            @id @default(cuid())
+  title            String
+  description      String?
+  startTime        DateTime
+  endTime          DateTime
+  durationMinutes  Int
+  testTemplateId   String
+  testTemplate     Test              @relation(fields: [testTemplateId], references: [id])
+  status           LiveTestStatus    @default(SCHEDULED)
+  visibility       Visibility        @default(PUBLIC)
+  registeredCount  Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  attempts         LiveTestAttempt[]
+  registrations    BattleRegistration[]
+
+  @@index([startTime])
+  @@index([status])
+}
+
+model BattleRegistration {
+  id          String   @id @default(cuid())
+  liveTestId  String
+  studentId   String
+  studentName String?
+  registeredAt DateTime @default(now())
+
+  liveTest LiveTest @relation(fields: [liveTestId], references: [id], onDelete: Cascade)
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([liveTestId, studentId])
+  @@index([liveTestId])
+  @@index([studentId])
+}
+
+model LiveTestAttempt {
+  id                  String        @id @default(cuid())
+  liveTestId          String
+  studentId           String
+  studentName         String?
+  status              AttemptStatus @default(IN_PROGRESS)
+  startedAt           DateTime      @default(now())
+  submittedAt         DateTime?
+  lastSavedAt         DateTime      @updatedAt
+  answers             Json
+  score               Int           @default(0)
+  correctAnswers      Int           @default(0)
+  wrongAnswers        Int           @default(0)
+  unanswered          Int           @default(0)
+  accuracy            Float         @default(0)
+  timeConsumedSeconds Int           @default(0)
+  result              Json?
+
+  liveTest LiveTest @relation(fields: [liveTestId], references: [id], onDelete: Cascade)
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([liveTestId, studentId])
+  @@index([liveTestId])
+  @@index([studentId])
+  @@index([score, timeConsumedSeconds, submittedAt])
+}
+
+enum LiveTestStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum Subject {
+  PHYSICS
+  CHEMISTRY
+  BOTANY
+  ZOOLOGY
+  BIOLOGY
+  MAJOR_TEST
+}
+
+enum QuestionType {
+  TEXT
+  IMAGE
+}
+
+enum AnswerPolicy {
+  SINGLE
+  MULTIPLE
+  DROPPED
+}
+
+enum TestMode {
+  CUSTOM
+  NEET_PATTERN
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+}
