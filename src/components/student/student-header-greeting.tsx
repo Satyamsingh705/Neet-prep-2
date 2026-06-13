@@ -48,5 +48,10 @@ export function StudentHeaderGreeting() {
     return null;
   }
 
-  return <div className="rounded-full border border-[#ffcf9f] bg-[#fff1df] px-4 py-2 text-center text-sm font-semibold text-[#d7671b] shadow-[0_10px_30px_rgba(215,103,27,0.12)]">Hi, {name} 👋</div>;
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700">
+      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+      Hi, {name}
+    </div>
+  );
 }

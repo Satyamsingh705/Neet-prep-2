@@ -2,27 +2,10 @@
 
 import { useState } from "react";
 
-async function waitForAttemptPage(attemptUrl: string) {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    const response = await fetch(attemptUrl, {
-      method: "GET",
-      cache: "no-store",
-      credentials: "include",
-    });
-
-    if (response.ok) {
-      return;
-    }
-
-    await new Promise((resolve) => window.setTimeout(resolve, 350));
-  }
-
-  throw new Error("Attempt page did not become ready in time.");
-}
-
 export function InstructionsClient({ testId }: { testId: string }) {
   const [accepted, setAccepted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   function goBack() {
     if (window.history.length > 1) {
@@ -34,6 +17,12 @@ export function InstructionsClient({ testId }: { testId: string }) {
   }
 
   async function startTestInNewWindow() {
+    if (!accepted) {
+      setValidationMessage("Please tick the checkbox before starting the test.");
+      window.setTimeout(() => setValidationMessage(null), 2500);
+      return;
+    }
+
     setIsStarting(true);
 
     const examWindow = window.open("about:blank", "_blank", "popup=yes,width=1440,height=960");
@@ -138,7 +127,6 @@ export function InstructionsClient({ testId }: { testId: string }) {
       }
 
       const attemptUrl = new URL(`/attempts/${payload.attemptId}`, window.location.origin).toString();
-      await waitForAttemptPage(attemptUrl);
       examWindow.location.replace(attemptUrl);
       setIsStarting(false);
     } catch {
@@ -149,19 +137,25 @@ export function InstructionsClient({ testId }: { testId: string }) {
   }
 
   return (
-    <div className="mt-7 border-t border-[#e6d8ca] pt-6 pb-24 lg:pb-0">
-      <label className="flex max-w-[760px] items-start gap-3 text-[1rem] leading-7 font-semibold text-[#3a3028] lg:text-[1.02rem]">
-        <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-1 h-4 w-4 shrink-0" />
+    <div className="mt-5 border-t border-[#e6d8ca] pt-4 pb-20 lg:pb-0">
+      <label className="flex max-w-[680px] items-start gap-3 text-[0.92rem] leading-6 font-semibold text-[#3a3028] lg:text-[0.95rem]">
+        <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-0.5 h-4 w-4 shrink-0" />
         <span>I have gone through the instructions, understood the legends, and will follow the rules.</span>
       </label>
 
-      <div className="mt-6 hidden lg:flex lg:items-center lg:justify-between">
-        <button type="button" className="btn-secondary min-w-[150px]" onClick={goBack}>
+      {validationMessage ? (
+        <p className="mt-3 inline-flex rounded-full border border-[#f2c7ad] bg-[#fff3ea] px-4 py-2 text-sm font-semibold text-[#c85f16]">
+          {validationMessage}
+        </p>
+      ) : null}
+
+      <div className="mt-4 hidden lg:flex lg:items-center lg:justify-between">
+        <button type="button" className="btn-secondary min-w-[130px] px-4 py-2 text-sm" onClick={goBack}>
           Back
         </button>
         <button
-          disabled={!accepted || isStarting}
-          className="btn-primary min-w-[170px]"
+          disabled={isStarting}
+          className="btn-primary min-w-[150px] px-4 py-2 text-sm"
           onClick={() => void startTestInNewWindow()}
           type="button"
         >
@@ -175,7 +169,7 @@ export function InstructionsClient({ testId }: { testId: string }) {
             Back
           </button>
           <button
-            disabled={!accepted || isStarting}
+            disabled={isStarting}
             className="btn-primary w-full"
             onClick={() => void startTestInNewWindow()}
             type="button"

@@ -33,13 +33,13 @@ export function JoinLiveTestButton({ liveTestId, isLive }: JoinLiveTestButtonPro
       <button
         onClick={handleJoin}
         disabled={!isLive || isPending}
-        className={`w-full rounded-2xl py-4 text-lg font-bold transition-all ${
+        className={`w-full rounded-[24px] py-6 text-lg font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] ${
           isLive 
-            ? "bg-[#d7671b] text-white hover:bg-[#b85616] shadow-lg shadow-orange-200" 
-            : "bg-[#f4f2ed] text-[#8a6a52] cursor-not-allowed border-2 border-dashed border-[#d8d1c6]"
+            ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_20px_40px_-12px_rgba(16,185,129,0.3)] hover:scale-[1.02]" 
+            : "bg-zinc-100 text-zinc-400 cursor-not-allowed border-2 border-dashed border-zinc-200"
         }`}
       >
-        {isPending ? "Entering Arena..." : isLive ? "Enter Competition" : "Waiting for start..."}
+        {isPending ? "Entering Arena..." : isLive ? "Enter Arena 🌩️" : "Awaiting Command"}
       </button>
       {error && <p className="text-center text-sm font-semibold text-red-500">{error}</p>}
     </div>

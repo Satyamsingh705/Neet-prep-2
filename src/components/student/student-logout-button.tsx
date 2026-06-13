@@ -22,7 +22,12 @@ export function StudentLogoutButton() {
   }
 
   return (
-    <button type="button" className="btn-secondary w-full md:w-auto" onClick={() => void handleLogout()} disabled={isSubmitting}>
+    <button 
+      type="button" 
+      className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors w-full md:w-auto disabled:opacity-50" 
+      onClick={() => void handleLogout()} 
+      disabled={isSubmitting}
+    >
       {isSubmitting ? "Signing out..." : "Logout"}
     </button>
   );

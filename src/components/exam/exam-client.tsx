@@ -7,6 +7,7 @@ import { QuestionContent, renderQuestionText } from "@/components/questions/ques
 import { getPaletteStatus, normalizeStoredAnswer } from "@/lib/neet";
 import { getDisplayPrompt } from "@/lib/question-content";
 import type { OptionKey, QuestionPayload, StoredAnswersMap } from "@/lib/types";
+import { persistLiveAttemptAction, submitLiveAttemptAction } from "@/lib/live-actions";
 
 type ExamClientProps = {
   attemptId: string;
@@ -81,65 +82,62 @@ const QuestionBody = React.memo(({
     const prompt = getDisplayPrompt(question.prompt ?? "");
 
     return (
-        <div className="w-full">
-            <div className="flex items-center gap-4 mb-10">
-                <span className="px-5 py-2 rounded-full bg-blue-50 text-blue-600 font-bold text-lg border border-blue-100">
-                    Question {String(question.orderIndex)} of {String(totalQuestions)}
-                </span>
-            </div>
+    <div className="w-full text-[#4d3d31]">
+      {/* Question number displayed in header; removed duplicate here */}
 
-            <div className="text-[40px] font-medium leading-[1.6] text-[#111827] mb-12">
-                {question.type === "TEXT" ? (
-                    <QuestionContent
-                        prompt={prompt}
-                        table={question.table}
-                        promptClassName="whitespace-pre-line"
-                        tableClassName="mt-8"
-                    />
-                ) : (
-                    <div className="mb-8">Image based question</div>
-                )}
-            </div>
+      <div className="prose prose-sm max-w-none text-[1rem] leading-8 text-[#4d3d31]">
+        {question.type === "TEXT" ? (
+          <QuestionContent
+            prompt={prompt}
+            table={question.table}
+            promptClassName="whitespace-pre-line text-[1rem] leading-8"
+            tableClassName="mt-6"
+          />
+        ) : (
+          <div className="mb-6 text-[1rem]">Image based question</div>
+        )}
+      </div>
 
-            {question.type === "IMAGE" && question.imagePath ? (
-                <div className="mb-12 p-6 border border-gray-100 rounded-3xl bg-gray-50/50">
-                    <Image
-                        src={question.imagePath}
-                        alt={`Question ${question.orderIndex}`}
-                        width={1200}
-                        height={600}
-                        className="max-w-full h-auto rounded-2xl mx-auto shadow-sm"
-                        priority
-                    />
-                </div>
-            ) : null}
+      {question.type === "IMAGE" && question.imagePath ? (
+        <div className="my-6 rounded-[0.9rem] border border-[#ddd0c3] bg-white p-4 shadow-sm">
+          <Image
+            src={question.imagePath}
+            alt={`Question ${question.orderIndex}`}
+            width={1200}
+            height={600}
+            className="mx-auto h-auto max-w-full rounded-[0.75rem]"
+            priority
+          />
+        </div>
+      ) : null}
 
-            <div className="grid gap-6">
+      <div className="mt-6 space-y-3.5">
                 {(question.options ?? fallbackOptions).map((option) => {
                     const isSelected = answer.selectedOptions.includes(option.key);
                     return (
-                        <div 
+            <button 
                             key={option.key} 
-                            className={`modern-option-card ${isSelected ? 'selected' : ''}`}
+              type="button"
+              className={`flex w-full items-center gap-4 rounded-[0.45rem] border px-4 py-2.5 text-left text-[0.98rem] transition ${isSelected ? 'border-[#1f7a48] bg-[#daf4dc] text-[#17482e] shadow-sm' : 'border-[#d8cdc0] bg-white text-[#4d3d31] hover:border-[#c8b8a6]'}`}
                             onClick={() => usesMultipleAnswers ? onToggleOption(option.key) : onSelectOption(option.key)}
                         >
-                            <div className="modern-option-badge">
-                                {option.key}
-                            </div>
-                            <div className="modern-option-text">
+              <div className={`flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 ${isSelected ? 'border-[#1f7a48] bg-[#1f7a48]' : 'border-[#b8ac9e] bg-white'}`}>
+                {isSelected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
+              </div>
+              <div className="min-w-0 flex-1">
                                 {renderQuestionText(option.text)}
                             </div>
-                        </div>
+            </button>
                     );
                 })}
             </div>
 
             <button 
-                type="button" 
-                className="mt-12 text-blue-600 hover:text-blue-800 font-bold text-lg transition-colors flex items-center gap-2 group" 
-                onClick={onClear}
+              type="button" 
+              className="mt-6 text-[0.98rem] font-normal text-sky-500 hover:text-sky-600 transition-colors"
+              onClick={onClear}
             >
-                <span className="group-hover:underline">Clear Response</span>
+              Clear Response
             </button>
         </div>
     );
@@ -194,17 +192,24 @@ export function ExamClient(props: ExamClientProps) {
   
   const submittedRef = useRef(false);
   const dirtySaveRef = useRef(false);
+  const saveInFlightRef = useRef(false);
+  const pendingSaveRef = useRef(false);
   const totalTimeSpentSecondsRef = useRef(props.initialTotalTimeSpentSeconds);
   const questionTimeSpentRef = useRef<Record<string, number>>({});
   
   const questions = props.questions;
   const currentQuestion = questions[currentQuestionIndex - 1];
+  const questionPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (currentQuestion && !questionTimeSpentRef.current[currentQuestion.id]) {
         questionTimeSpentRef.current[currentQuestion.id] = answers[currentQuestion.id]?.timeSpentSeconds ?? 0;
     }
   }, [currentQuestion, answers]);
+
+  useEffect(() => {
+    questionPanelRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [currentQuestionIndex]);
 
   // Silent background tracker
   useEffect(() => {
@@ -233,20 +238,49 @@ export function ExamClient(props: ExamClientProps) {
 
   const saveAttempt = useCallback(async (body: object) => {
     if (submittedRef.current) return;
+    if (saveInFlightRef.current) {
+      pendingSaveRef.current = true;
+      return;
+    }
+
+    saveInFlightRef.current = true;
     try {
-        const response = await fetch(`/api/attempts/${props.attemptId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        });
-        if (!response.ok) throw new Error("Save failed");
+        if (props.test.mode === "LIVE") {
+            const params = body as any;
+            await persistLiveAttemptAction({
+                attemptId: props.attemptId,
+                answers: params.answers ?? {},
+                timeConsumedSeconds: params.totalTimeSpentSeconds ?? 0,
+            });
+        } else {
+            const response = await fetch(`/api/attempts/${props.attemptId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+            if (!response.ok) throw new Error("Save failed");
+        }
     } catch (e) { console.error("Autosave error", e); }
-  }, [props.attemptId]);
+    finally {
+      saveInFlightRef.current = false;
+    }
+  }, [props.attemptId, props.test.mode]);
 
   const flushSave = useCallback(async () => {
     if (submittedRef.current || !dirtySaveRef.current) return;
+    if (saveInFlightRef.current) {
+      pendingSaveRef.current = true;
+      return;
+    }
+
     await saveAttempt(getLatestState());
     dirtySaveRef.current = false;
+
+    if (pendingSaveRef.current) {
+      pendingSaveRef.current = false;
+      dirtySaveRef.current = true;
+      await flushSave();
+    }
   }, [getLatestState, saveAttempt]);
 
   useEffect(() => {
@@ -260,16 +294,22 @@ export function ExamClient(props: ExamClientProps) {
     setIsSubmitting(true);
     try {
       const state = getLatestState();
-      await fetch(`/api/attempts/${props.attemptId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state) });
-      const res = await fetch(`/api/attempts/${props.attemptId}/submit${auto ? "?auto=1" : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state) });
-      if (!res.ok) throw new Error("Submit failed");
-      router.replace(`/attempts/${props.attemptId}/result`);
+      if (props.test.mode === "LIVE") {
+        await persistLiveAttemptAction({ attemptId: props.attemptId, answers: state.answers, timeConsumedSeconds: state.totalTimeSpentSeconds });
+        await submitLiveAttemptAction(props.attemptId);
+        router.replace(`/live-arena/${props.test.id}/leaderboard`);
+      } else {
+        await fetch(`/api/attempts/${props.attemptId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state) });
+        const res = await fetch(`/api/attempts/${props.attemptId}/submit${auto ? "?auto=1" : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state) });
+        if (!res.ok) throw new Error("Submit failed");
+        router.replace(`/attempts/${props.attemptId}/result`);
+      }
     } catch (e) {
       submittedRef.current = false;
       setIsSubmitting(false);
       window.alert("Submission failed. Try again.");
     }
-  }, [props.attemptId, router, getLatestState]);
+  }, [props.attemptId, router, getLatestState, props.test.id, props.test.mode]);
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -286,18 +326,33 @@ export function ExamClient(props: ExamClientProps) {
     };
     const handlePageHide = () => {
       if (!submittedRef.current) {
-        const body = new Blob([JSON.stringify(getLatestState())], { type: "application/json" });
+        const state = getLatestState();
+        const body = new Blob([JSON.stringify(state)], { type: "application/json" });
+        if (props.test.mode === "LIVE") {
+          // Use the live attempts submit endpoint which evaluates and marks AUTO_SUBMITTED
+          navigator.sendBeacon(`/api/live-attempts/${props.attemptId}/submit?auto=1`, body);
+          return;
+        }
         navigator.sendBeacon(`/api/attempts/${props.attemptId}/submit?auto=1`, body);
       }
+    };
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (submittedRef.current) return;
+      e.preventDefault();
+      // Most browsers show a generic confirmation; set returnValue to trigger it
+      e.returnValue = "You have an ongoing test. Leaving will auto-submit your attempt.";
+      return "You have an ongoing test. Leaving will auto-submit your attempt.";
     };
     window.history.pushState({ locked: true }, "", window.location.href);
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("popstate", handlePopState);
     window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [props.attemptId, getLatestState]);
 
@@ -344,139 +399,146 @@ export function ExamClient(props: ExamClientProps) {
   };
 
   const currentAnswer = normalizeStoredAnswer(answers[currentQuestion.id] ?? { ...blankAnswer(), visited: true });
+  const progressPercent = Math.round((counts.answered / props.test.totalQuestions) * 100);
 
   return (
-    <div className="modern-exam-theme min-h-screen flex flex-col">
-      {/* STICKY HEADER */}
-      <header className="sticky top-0 z-50 h-[100px] bg-white border-b border-[#E5E7EB] px-10 flex items-center justify-between shadow-sm">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-black text-[#111827] uppercase tracking-tight">
-            {props.test.name}
-          </h1>
-          <div className="flex items-center gap-4 mt-1">
-            <span className="text-sm font-bold text-blue-600 uppercase tracking-widest">
-                Progress: {Math.round((counts.answered / props.test.totalQuestions) * 100)}%
-            </span>
-            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                ID: {props.test.testCode ?? `TST-${props.test.id.slice(-8).toUpperCase()}`}
-            </span>
+    <div className="h-screen overflow-hidden bg-[#f4efe6] text-[#4d3d31]">
+      <div className="flex h-screen w-full flex-col">
+        <header className="grid grid-cols-[140px_1fr] overflow-hidden rounded-t-[0.5rem] border border-[#ddd0c3] bg-[#f7f2ea] shadow-[0_1px_6px_rgba(92,70,48,0.06)]">
+          <div className="flex items-center border-r border-[#ddd0c3] px-3 py-2">
+            <div className="text-lg font-semibold text-[#d07a31]">{props.studentName}</div>
           </div>
-        </div>
-        
-        <div className="modern-timer-box">
-          <ExamTimer 
-            initialSeconds={Math.max(0, props.test.durationMinutes * 60 - props.initialTotalTimeSpentSeconds)} 
-            onExpire={() => void submitAttempt(true)} 
-          />
-        </div>
-      </header>
-
-      <div className="flex-1 flex w-full max-w-[1720px] mx-auto relative">
-        {/* MAIN QUESTION AREA */}
-        <main className="flex-1 px-12 py-16 pb-[160px] max-w-[1400px]">
-          <QuestionBody 
-              question={currentQuestion} 
-              answer={currentAnswer} 
-              onSelectOption={selectOption} 
-              onToggleOption={toggleOption}
-              onClear={clearResponse}
-              totalQuestions={props.test.totalQuestions}
-          />
-        </main>
-
-        {/* FIXED RIGHT SIDEBAR PALETTE */}
-        <aside className="w-[320px] sticky top-[100px] h-[calc(100vh-100px)] border-l border-[#E5E7EB] bg-white flex flex-col flex-shrink-0">
-          <div className="p-8 border-b border-[#E5E7EB]">
-            <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Question Palette</h2>
-            <div className="flex justify-between text-[10px] font-bold uppercase text-gray-400">
-                <span>{counts.answered} Answered</span>
-                <span>{props.test.totalQuestions - counts.answered} Left</span>
+          <div className="flex items-center justify-between gap-4 px-4 py-2">
+            <div className="flex flex-wrap items-center gap-2 text-[#7a5f46]">
+              <span className="text-[0.95rem] font-semibold text-[#d46f23]">Test Name</span>
+              <span className="text-[1.25rem] font-bold leading-tight">{props.test.name}</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-[0.5rem] border-2 border-[#ea8b3a] bg-[#fff8f0] px-3 py-1.5 text-[#d46f23] shadow-sm">
+              <div className="text-sm font-semibold uppercase tracking-[0.06em]">Time Remaining</div>
+              <div className="min-w-[96px] rounded-[0.35rem] border border-[#ea8b3a] bg-white px-3 py-1 text-center text-xl font-bold tabular-nums text-[#d46f23]">
+                <ExamTimer
+                  initialSeconds={Math.max(0, props.test.durationMinutes * 60 - props.initialTotalTimeSpentSeconds)}
+                  onExpire={() => void submitAttempt(true)}
+                />
+              </div>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-gray-200">
-            <div className="grid grid-cols-4 gap-4">
-              {questions.map((q) => {
-                const status = getPaletteStatus(answers[q.id] ?? blankAnswer());
-                const isCurrent = q.orderIndex === currentQuestionIndex;
-                
-                let statusClass = "modern-palette-unanswered";
-                if (status === "ANSWERED" || status === "ANSWERED_REVIEW") statusClass = "modern-palette-answered";
-                else if (status === "REVIEW") statusClass = "modern-palette-marked";
-                
-                if (isCurrent) statusClass = "modern-palette-current";
+        </header>
 
-                return (
+        <div className="grid flex-1 min-h-0 overflow-hidden rounded-b-[0.75rem] border-x border-b border-[#ddd0c3] bg-[#f8f4ec] shadow-[0_2px_8px_rgba(92,70,48,0.04)] grid-cols-[220px_minmax(0,1fr)] md:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="flex min-h-0 flex-col border-r border-[#ddd0c3] bg-[#f6f0e6]">
+            <div className="border-b border-[#ddd0c3] p-3">
+              <div className="rounded-[0.7rem] border border-[#e2d4c3] bg-[#fffaf4] p-3 shadow-sm">
+                <h2 className="border-b border-[#efcfa8] pb-2 text-[1.05rem] font-bold text-[#d46f23]">Attempt Status</h2>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[0.72rem] font-bold text-white">
+                  <div className="rounded-md bg-[#4caf50] px-2 py-2">Answered<br />{counts.answered}</div>
+                  <div className="rounded-md bg-[#f0b03f] px-2 py-2">Flagged<br />{counts.flagged}</div>
+                  <div className="rounded-md bg-[#d96359] px-2 py-2">Pending<br />{counts.pending}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col p-3">
+              <div className="flex min-h-0 flex-1 flex-col rounded-[0.75rem] border border-[#e2d4c3] bg-[#fffaf4] shadow-sm">
+                <div className="border-b border-[#efcfa8] p-3">
+                  <h2 className="text-[1.05rem] font-bold text-[#d46f23]">Questions</h2>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+                    <div className="grid grid-cols-5 gap-2.5 max-h-[72vh] overflow-y-auto">
+                    {questions.map((q) => {
+                      const status = getPaletteStatus(answers[q.id] ?? blankAnswer());
+                      const isCurrent = q.orderIndex === currentQuestionIndex;
+
+                      let statusClass = "bg-[#d8dde6] text-[#2f2f2f] border-[#b8c0cb]";
+                      if (status === "ANSWERED" || status === "ANSWERED_REVIEW") statusClass = "bg-[#69b86b] text-white border-[#4a9851]";
+                      else if (status === "REVIEW") statusClass = "bg-[#f0b03f] text-white border-[#da9a28]";
+                      if (isCurrent) statusClass = "bg-[#d96359] text-white border-[#b54f47] shadow-[0_0_0_2px_rgba(217,99,89,0.2)]";
+
+                      return (
+                        <button
+                          key={q.id}
+                          className={`h-10 rounded-[0.35rem] border text-[0.95rem] font-bold transition hover:brightness-95 ${statusClass}`}
+                          onClick={() => goToQuestion(q.orderIndex)}
+                          type="button"
+                        >
+                          {String(q.orderIndex).padStart(2, "0")}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <main className="min-h-0 overflow-hidden bg-[#f8f4ec]">
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="border-b border-[#ddd0c3] px-6 py-5">
+                <div className="flex items-center justify-between text-[0.95rem] font-semibold text-[#c85f16]">
+                  <div>Q {String(currentQuestion.orderIndex).padStart(2, "0")} of {String(props.test.totalQuestions).padStart(2, "0")}</div>
+                  <div className="text-green-700 font-bold">{progressPercent}% completed</div>
+                </div>
+              </div>
+
+              <div ref={questionPanelRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-6 lg:px-8 lg:py-8">
+                <div className="max-w-[980px]">
+                  <QuestionBody
+                    question={currentQuestion}
+                    answer={currentAnswer}
+                    onSelectOption={selectOption}
+                    onToggleOption={toggleOption}
+                    onClear={clearResponse}
+                    totalQuestions={props.test.totalQuestions}
+                  />
+                </div>
+              </div>
+
+              <footer className="shrink-0 border-t border-[#ddd0c3] bg-[#f3ede3] px-4 py-3 shadow-[0_-2px_8px_rgba(92,70,48,0.04)] lg:px-6">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn-secondary min-w-[108px] !border-[#d9cfc3] !bg-[#fffaf3] !px-4 !py-3 !text-[#5f4a3c]"
+                      onClick={() => goToQuestion(currentQuestionIndex - 1)}
+                      disabled={currentQuestionIndex === 1}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary min-w-[108px] !bg-[#e5ae3a] !px-4 !py-3 !text-white"
+                      onClick={flagAndNext}
+                    >
+                      Flag
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary min-w-[108px] !bg-[#1ba96a] !px-4 !py-3 !text-white"
+                      onClick={() => goToQuestion(currentQuestionIndex + 1)}
+                      disabled={currentQuestionIndex === props.test.totalQuestions}
+                    >
+                      Next
+                    </button>
+                  </div>
+
                   <button
-                    key={q.id}
-                    className={`modern-palette-btn ${statusClass}`}
-                    onClick={() => goToQuestion(q.orderIndex)}
                     type="button"
+                    className="btn-primary min-w-[126px] !bg-[#e35d53] !px-6 !py-3 !text-white"
+                    onClick={() => setShowSubmitDialog(true)}
                   >
-                    {String(q.orderIndex).padStart(2, "0")}
+                    End Test
                   </button>
-                );
-              })}
+                </div>
+              </footer>
             </div>
-          </div>
-          <div className="p-8 bg-gray-50 border-t border-[#E5E7EB] flex flex-col gap-4">
-            <div className="flex items-center gap-3 text-xs font-bold text-gray-600">
-                <div className="w-4 h-4 rounded bg-[#10B981]" /> Answered
-            </div>
-            <div className="flex items-center gap-3 text-xs font-bold text-gray-600">
-                <div className="w-4 h-4 rounded bg-[#F59E0B]" /> Marked for Review
-            </div>
-            <div className="flex items-center gap-3 text-xs font-bold text-gray-600">
-                <div className="w-4 h-4 rounded bg-gray-200" /> Not Answered
-            </div>
-          </div>
-        </aside>
-      </div>
+          </main>
+        </div>
 
-      {/* STICKY BOTTOM ACTION BAR */}
-      <footer className="fixed bottom-0 left-0 right-0 h-[120px] bg-white/90 backdrop-blur-md border-t border-[#E5E7EB] px-12 flex items-center justify-between z-40 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
-        <div className="flex gap-4">
-          <button 
-            type="button" 
-            className="modern-btn modern-btn-secondary" 
-            onClick={() => goToQuestion(currentQuestionIndex - 1)} 
-            disabled={currentQuestionIndex === 1}
-          >
-            Previous
-          </button>
-          <button 
-            type="button" 
-            className="modern-btn modern-btn-warning" 
-            onClick={flagAndNext}
-          >
-            Mark For Review
-          </button>
-          <button 
-            type="button" 
-            className="modern-btn modern-btn-secondary text-blue-600 border-blue-100" 
-            onClick={clearResponse}
-          >
-            Clear Response
-          </button>
-        </div>
-        
-        <div className="flex gap-4">
-          <button 
-            type="button" 
-            className="modern-btn modern-btn-primary w-[240px]" 
-            onClick={() => goToQuestion(currentQuestionIndex + 1)} 
-            disabled={currentQuestionIndex === props.test.totalQuestions}
-          >
-            Save & Next
-          </button>
-          <button 
-            type="button" 
-            className="modern-btn modern-btn-danger" 
-            onClick={() => setShowSubmitDialog(true)}
-          >
-            Submit Test
-          </button>
-        </div>
-      </footer>
+        {tabWarning ? (
+          <div className="fixed right-4 top-4 z-[70] rounded-full border border-[#d9b28c] bg-[#fff7ef] px-4 py-2 text-sm font-semibold text-[#b85f20] shadow-lg">
+            {tabWarning}
+          </div>
+        ) : null}
 
       {showSubmitDialog && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
@@ -521,6 +583,7 @@ export function ExamClient(props: ExamClientProps) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

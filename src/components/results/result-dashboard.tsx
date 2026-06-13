@@ -199,7 +199,7 @@ function QuestionList({ questions }: { questions: ResultDashboardProps["result"]
             <div className="mt-3 rounded-[0.9rem] border border-[#efe3d6] bg-white p-3 sm:p-4">
               <div className="text-sm font-semibold text-[#2f241c]">Question</div>
               <QuestionContent
-                prompt={getDisplayPrompt(question.prompt) || "Image based question"}
+                 prompt={getDisplayPrompt(question.prompt) || (question.type === "IMAGE" ? "Image based question" : "Question")}
                 table={question.table}
                 promptClassName="mt-2 text-sm leading-6 text-[#4f4338] whitespace-pre-line"
                 tableClassName="mt-4"

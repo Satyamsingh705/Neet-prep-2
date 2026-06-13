@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { AnswerPolicy, Prisma, QuestionType, Subject } from "@prisma/client";
 import { z } from "zod";
 import { getCurrentAdmin } from "@/lib/admin-auth";
@@ -40,72 +41,80 @@ const metaSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
+    try {
+      const admin = await getCurrentAdmin();
 
-    if (!admin) {
-      return NextResponse.json({ error: "Admin authentication required." }, { status: 401 });
-    }
+      if (!admin) {
+        return NextResponse.json({ error: "Admin authentication required." }, { status: 401 });
+      }
 
-    const body = await request.json();
-    const payload = metaSchema.parse({
-      name: body.name,
-      description: body.description || undefined,
-      durationMinutes: body.durationMinutes,
-      correctMarks: body.correctMarks,
-      incorrectMarks: body.incorrectMarks,
-      unansweredMarks: body.unansweredMarks,
-      published: body.published,
-      assignedSection: body.assignedSection,
-      pdfAnswerKey: body.pdfAnswerKey || undefined,
-    });
-
-    const questionsInput = z.array(questionSchema).parse(body.questions);
-
-    if (questionsInput.length === 0) {
-      return NextResponse.json({ error: "At least one question is required." }, { status: 400 });
-    }
-
-    const questionData = questionsInput.map((row) => {
-      const correctAnswers = row.correctAnswers;
-      return {
-        subject: row.subject,
-        chapter: row.chapter,
-        type: row.type,
-        prompt: row.prompt ?? null,
-        metadata: row.metadata ? row.metadata : Prisma.JsonNull,
-        options: row.options ?? Prisma.JsonNull,
-        imagePath: row.imagePath ?? null,
-        correctAnswers,
-        answerPolicy: row.answerPolicy ?? (correctAnswers.length > 1 ? AnswerPolicy.MULTIPLE : AnswerPolicy.SINGLE),
-      };
-    });
-
-    const { createdQuestions, test } = await prisma.$transaction(async (tx) => {
-      const createdRows = await tx.question.createManyAndReturn({
-        data: questionData,
-        select: {
-          id: true,
-          subject: true,
-          chapter: true,
-        },
+      const body = await request.json();
+      const payload = metaSchema.parse({
+        name: body.name,
+        description: body.description || undefined,
+        durationMinutes: body.durationMinutes,
+        correctMarks: body.correctMarks,
+        incorrectMarks: body.incorrectMarks,
+        unansweredMarks: body.unansweredMarks,
+        published: body.published,
+        assignedSection: body.assignedSection,
+        pdfAnswerKey: body.pdfAnswerKey || undefined,
       });
 
-      const createdTest = await createTestFromUploadedQuestions(tx, payload, createdRows);
+      const questionsInput = z.array(questionSchema).parse(body.questions);
 
-      return {
-        createdQuestions: createdRows,
-        test: createdTest,
-      };
-    }, {
-      maxWait: 10_000,
-      timeout: 20_000,
-    });
+      if (questionsInput.length === 0) {
+        return NextResponse.json({ error: "At least one question is required." }, { status: 400 });
+      }
 
-    return NextResponse.json({
-      message: `Created test ${test.name} with ${createdQuestions.length} uploaded questions.`,
-      test,
-    });
+      const questionData = questionsInput.map((row) => {
+        const correctAnswers = row.correctAnswers;
+        return {
+          subject: row.subject,
+          chapter: row.chapter,
+          type: row.type,
+          prompt: row.prompt ?? null,
+          metadata: row.metadata ? row.metadata : Prisma.JsonNull,
+          options: row.options ?? Prisma.JsonNull,
+          imagePath: row.imagePath ?? null,
+          correctAnswers,
+          answerPolicy: row.answerPolicy ?? (correctAnswers.length > 1 ? AnswerPolicy.MULTIPLE : AnswerPolicy.SINGLE),
+        };
+      });
+
+      const { createdQuestions, test } = await prisma.$transaction(async (tx) => {
+        const createdRows = await tx.question.createManyAndReturn({
+          data: questionData,
+          select: {
+            id: true,
+            subject: true,
+            chapter: true,
+          },
+        });
+
+        const createdTest = await createTestFromUploadedQuestions(tx, payload, createdRows);
+
+        return {
+          createdQuestions: createdRows,
+          test: createdTest,
+        };
+      }, {
+        maxWait: 10_000,
+        timeout: 20_000,
+      });
+
+      // Revalidate cached test listings and attempts
+      revalidateTag("tests");
+      revalidateTag("attempts");
+
+      return NextResponse.json({
+        message: `Created test ${test.name} with ${createdQuestions.length} uploaded questions.`,
+        test,
+      });
+    } catch (innerError) {
+      return NextResponse.json({ error: innerError instanceof Error ? innerError.message : "Failed to create test from upload." }, { status: 400 });
+    }
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to create test from upload." }, { status: 400 });
+    return NextResponse.json({ error: "An unexpected error occurred during test upload." }, { status: 500 });
   }
 }

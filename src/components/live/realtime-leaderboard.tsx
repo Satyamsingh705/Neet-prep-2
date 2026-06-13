@@ -51,7 +51,17 @@ export function RealtimeLeaderboard({ liveTestId, initialEntries, currentStudent
 
     return (
         <div className="flex flex-col gap-10">
-            {entries.length > 0 && <LeaderboardPodium entries={entries.slice(0, 3)} />}
+            {entries.length > 0 && (
+                <LeaderboardPodium 
+                    entries={entries.slice(0, 3).map(e => ({
+                        rank: e.rank,
+                        studentName: e.studentName,
+                        score: e.score,
+                        accuracy: e.accuracy,
+                        timeConsumed: e.timeConsumedSeconds
+                    }))} 
+                />
+            )}
             
             {myEntry && (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

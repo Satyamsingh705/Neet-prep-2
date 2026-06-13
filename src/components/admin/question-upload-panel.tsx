@@ -27,6 +27,11 @@ export function QuestionUploadPanel({ chapters }: { chapters: ChapterSummary[] }
       }
 
       const jsonText = await file.text();
+
+      if (/^\s*</.test(jsonText)) {
+        throw new Error("Selected file contains HTML instead of JSON. Upload the raw JSON file.");
+      }
+
       const jsonContent = JSON.parse(jsonText);
       const normalized = Array.isArray(jsonContent) ? jsonContent : [jsonContent];
 
@@ -51,7 +56,16 @@ export function QuestionUploadPanel({ chapters }: { chapters: ChapterSummary[] }
         body: JSON.stringify({ questions: parsedQuestions }),
       });
 
-      const payload = await response.json();
+      const text = await response.text();
+      let payload: { error?: string; message?: string } = {};
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${text}`);
+        }
+      }
+
       if (!response.ok) {
         throw new Error(payload.error ?? "JSON upload failed.");
       }

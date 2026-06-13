@@ -7,7 +7,7 @@ export default async function LiveArenaPage() {
   const data = await getLiveArenaData(student.id);
 
   return (
-    <main className="mx-auto max-w-[1400px] px-6 py-10">
+    <main className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-10 py-10 bg-slate-50 min-h-screen">
       <LiveArenaClient 
         initialTests={data.liveTests} 
         studentName={student.displayName ?? student.username}

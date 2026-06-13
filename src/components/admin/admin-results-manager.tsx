@@ -45,7 +45,15 @@ export function AdminResultsManager({ attempts }: AdminResultsManagerProps) {
 
     try {
       const response = await fetch(`/api/results/${pendingDelete.attemptId}`, { method: "DELETE" });
-      const payload = await response.json();
+      const text = await response.text();
+      let payload: { error?: string } = {};
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Delete failed: ${text}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to delete result.");

@@ -37,7 +37,15 @@ export function AdminTestList({ tests }: AdminTestListProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ published: !published }),
       });
-      const payload = await response.json();
+      const text = await response.text();
+      let payload: { error?: string } = {};
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Update failed: ${text}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to update test.");
@@ -63,7 +71,15 @@ export function AdminTestList({ tests }: AdminTestListProps) {
 
     try {
       const response = await fetch(`/api/tests/${pendingDelete.id}`, { method: "DELETE" });
-      const payload = await response.json();
+      const text = await response.text();
+      let payload: { error?: string } = {};
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Delete failed: ${text}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to delete test.");

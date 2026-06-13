@@ -41,12 +41,12 @@ export function LiveCountdown({ targetDate, onEnd, title }: LiveCountdownProps) 
 
   return (
     <div className="flex flex-col items-center">
-      {title && <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-[#b26d39]">{title}</p>}
-      <div className="flex gap-4 sm:gap-6">
+      {title && <p className="mb-8 text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">{title}</p>}
+      <div className="flex gap-4 sm:gap-10">
         <TimeUnit value={timeLeft.days} label="Days" />
         <TimeUnit value={timeLeft.hours} label="Hours" />
-        <TimeUnit value={timeLeft.minutes} label="Minutes" />
-        <TimeUnit value={timeLeft.seconds} label="Seconds" />
+        <TimeUnit value={timeLeft.minutes} label="Mins" />
+        <TimeUnit value={timeLeft.seconds} label="Secs" />
       </div>
     </div>
   );
@@ -55,10 +55,10 @@ export function LiveCountdown({ targetDate, onEnd, title }: LiveCountdownProps) 
 function TimeUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-2xl font-bold text-[#2f241c] shadow-sm ring-1 ring-inset ring-[#e6d9cb] sm:h-20 sm:w-20 sm:text-4xl">
+      <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-white/5 border border-white/10 text-3xl font-black text-white shadow-xl backdrop-blur-md sm:h-24 sm:w-24 sm:text-5xl tabular-nums tracking-tighter">
         {String(value).padStart(2, "0")}
       </div>
-      <span className="mt-2 text-[0.65rem] font-bold uppercase tracking-wider text-[#8a6a52] sm:text-xs">{label}</span>
+      <span className="mt-4 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500">{label}</span>
     </div>
   );
 }

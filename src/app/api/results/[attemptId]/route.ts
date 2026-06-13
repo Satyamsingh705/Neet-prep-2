@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getCurrentAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
@@ -11,7 +12,13 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     }
 
     const { attemptId } = await params;
-    await prisma.attempt.delete({ where: { id: attemptId } });
+    const result = await prisma.attempt.deleteMany({ where: { id: attemptId } });
+
+    if (result.count === 0) {
+      return NextResponse.json({ error: "Attempt not found or already deleted." }, { status: 404 });
+    }
+
+    revalidateTag("attempts");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to delete result." }, { status: 400 });

@@ -32,56 +32,82 @@ export function SiteHeader() {
       ];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#d9cfc3] bg-[rgba(249,246,241,0.97)] backdrop-blur">
-      <div className="mx-auto flex max-w-[1400px] flex-col px-0 py-3 sm:px-6 sm:py-4">
-        <div className="flex items-center justify-between gap-4 px-3 sm:px-0">
-          <div className="flex min-w-0 items-center gap-4 text-[1rem] text-[#6d5c4d] sm:gap-10 sm:text-[1.1rem]">
-            <Link href="/" className="truncate font-semibold text-[#17a765]">
-              NEET Practice Platform
-            </Link>
-            <nav className="hidden items-center gap-6 md:flex">
-              {links.map((link) => (
-                <Link key={link.href} href={link.href} className={pathname === link.href ? "font-semibold text-[#2f241c]" : undefined}>
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="hidden items-center gap-3 md:flex">
-            {isAdminRoute ? <AdminHeaderGreeting /> : null}
-            {isAdminRoute ? <AdminLogoutButton /> : null}
-            {isStudentRoute ? <StudentHeaderGreeting /> : null}
-            {isStudentRoute ? <StudentLogoutButton /> : null}
-          </div>
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#dacdbf] bg-white text-[#3b3128] md:hidden"
-            onClick={() => setMenuOpen((current) => !current)}
-            aria-label="Toggle navigation"
-            aria-expanded={menuOpen}
-          >
-            <span className="text-xl leading-none">{menuOpen ? "×" : "≡"}</span>
-          </button>
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
+      <div className="mx-auto flex max-w-[1440px] h-[56px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-10">
+          <Link href="/" className="flex items-center gap-2 font-serif text-[#6b4f3f] text-2xl tracking-wide">
+            NEETPrep
+          </Link>
+          <nav className="hidden md:flex items-center gap-2">
+            {links.map((link) => (
+              <Link 
+                key={link.href} 
+                href={link.href} 
+                className={`px-4 py-2 text-lg font-serif transition-colors ${
+                  pathname === link.href 
+                    ? "text-[#6b4f3f]" 
+                    : "text-[#6b4f3f]/80 hover:text-[#6b4f3f]"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        {menuOpen ? (
-          <div className="mt-3 mx-3 rounded-[1.2rem] border border-[#e3d6c8] bg-white/95 p-4 shadow-[0_18px_50px_rgba(79,52,26,0.08)] sm:mx-0 md:hidden">
-            <nav className="flex flex-col gap-2 text-[0.98rem] text-[#4f4338]">
-              {links.map((link) => (
-                <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className={`rounded-lg px-3 py-2 ${pathname === link.href ? "bg-[#fff2e5] font-semibold text-[#d7671b]" : "bg-transparent"}`}>
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-            <div className="mt-4 flex flex-col gap-3">
-              {isAdminRoute ? <AdminHeaderGreeting /> : null}
+          <div className="hidden md:flex items-center gap-3">
+          <div className="flex items-center gap-3">
+            {isAdminRoute ? <AdminHeaderGreeting /> : null}
+            {isStudentRoute ? <StudentHeaderGreeting /> : null}
+          </div>
+          <div className="h-5 w-px bg-slate-200" />
+          {isAdminRoute ? <AdminLogoutButton /> : null}
+          {isStudentRoute ? <StudentLogoutButton /> : null}
+        </div>
+
+        <button
+          type="button"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 md:hidden"
+          onClick={() => setMenuOpen((current) => !current)}
+        >
+          {menuOpen ? <CloseIcon /> : <MenuIcon />}
+        </button>
+      </div>
+
+      {menuOpen && (
+        <div className="md:hidden border-t border-slate-100 bg-white p-4 space-y-4">
+          <nav className="flex flex-col gap-1">
+            {links.map((link) => (
+              <Link 
+                key={link.href} 
+                href={link.href} 
+                onClick={() => setMenuOpen(false)}
+                className={`px-3 py-2 text-lg font-serif ${
+                  pathname === link.href ? "text-[#6b4f3f]" : "text-[#6b4f3f]/80"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="pt-4 border-t border-slate-100 space-y-3">
+            {isAdminRoute ? <AdminHeaderGreeting /> : null}
+            {isStudentRoute ? <StudentHeaderGreeting /> : null}
+            <div className="flex flex-col gap-2">
               {isAdminRoute ? <AdminLogoutButton /> : null}
-              {isStudentRoute ? <StudentHeaderGreeting /> : null}
               {isStudentRoute ? <StudentLogoutButton /> : null}
             </div>
           </div>
-        ) : null}
-      </div>
+        </div>
+      )}
     </header>
   );
 }
+
+const MenuIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+);
+
+const CloseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+);

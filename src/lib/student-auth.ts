@@ -1,5 +1,4 @@
 import { createHmac } from "node:crypto";
-import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -76,7 +75,7 @@ export function clearStudentSessionCookie() {
   };
 }
 
-export const getCurrentStudent = cache(async () => {
+export async function getCurrentStudent() {
   const cookieStore = await cookies();
   const session = decodeSession(cookieStore.get(STUDENT_SESSION_COOKIE)?.value);
 
@@ -89,9 +88,9 @@ export const getCurrentStudent = cache(async () => {
     username: session.username,
     displayName: session.displayName ?? null,
   };
-});
+}
 
-export const getCurrentStudentRecord = cache(async () => {
+export async function getCurrentStudentRecord() {
   const sessionStudent = await getCurrentStudent();
 
   if (!sessionStudent) {
@@ -117,7 +116,7 @@ export const getCurrentStudentRecord = cache(async () => {
     username: student.username,
     displayName: student.displayName,
   };
-});
+}
 
 export async function requireCurrentStudent() {
   const student = await getCurrentStudent();

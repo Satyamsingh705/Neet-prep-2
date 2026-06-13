@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { AnswerPolicy, Prisma, QuestionType, Subject } from "@prisma/client";
 import { z } from "zod";
 import { getCurrentAdmin } from "@/lib/admin-auth";
@@ -32,34 +33,42 @@ const questionSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const admin = await getCurrentAdmin();
+    try {
+      const admin = await getCurrentAdmin();
 
-    if (!admin) {
-      return NextResponse.json({ error: "Admin authentication required." }, { status: 401 });
+      if (!admin) {
+        return NextResponse.json({ error: "Admin authentication required." }, { status: 401 });
+      }
+
+      const body = await request.json();
+      const questionsInput = z.array(questionSchema).parse(body.questions);
+
+      await prisma.question.createMany({
+        data: questionsInput.map((row) => {
+          const correctAnswers = row.correctAnswers ?? (row.correctAnswer ? [row.correctAnswer] : []);
+
+          return {
+            subject: row.subject as Subject,
+            chapter: row.chapter,
+            type: QuestionType.TEXT,
+            prompt: row.prompt,
+            metadata: row.table ? { table: row.table } : Prisma.JsonNull,
+            options: row.options,
+            correctAnswers,
+            answerPolicy: row.answerPolicy ?? (correctAnswers.length > 1 ? AnswerPolicy.MULTIPLE : AnswerPolicy.SINGLE),
+          };
+        }),
+      });
+
+      // Revalidate cached question bank summary and test listings
+      revalidateTag("questions");
+      revalidateTag("tests");
+
+      return NextResponse.json({ message: `Uploaded ${questionsInput.length} text questions.` });
+    } catch (innerError) {
+      return NextResponse.json({ error: innerError instanceof Error ? innerError.message : "Invalid JSON upload." }, { status: 400 });
     }
-
-    const body = await request.json();
-    const questionsInput = z.array(questionSchema).parse(body.questions);
-
-    await prisma.question.createMany({
-      data: questionsInput.map((row) => {
-        const correctAnswers = row.correctAnswers ?? (row.correctAnswer ? [row.correctAnswer] : []);
-
-        return {
-          subject: row.subject as Subject,
-          chapter: row.chapter,
-          type: QuestionType.TEXT,
-          prompt: row.prompt,
-          metadata: row.table ? { table: row.table } : Prisma.JsonNull,
-          options: row.options,
-          correctAnswers,
-          answerPolicy: row.answerPolicy ?? (correctAnswers.length > 1 ? AnswerPolicy.MULTIPLE : AnswerPolicy.SINGLE),
-        };
-      }),
-    });
-
-    return NextResponse.json({ message: `Uploaded ${questionsInput.length} text questions.` });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid JSON upload." }, { status: 400 });
+    return NextResponse.json({ error: "An unexpected error occurred during JSON upload." }, { status: 500 });
   }
 }

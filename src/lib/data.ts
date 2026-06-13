@@ -86,6 +86,7 @@ export async function getDashboardData() {
             durationMinutes: true,
             mode: true,
             published: true,
+            testCode: true,
             createdAt: true,
             _count: { select: { attempts: true } },
           },
@@ -166,12 +167,13 @@ export const getQuestionBankSummary = unstable_cache(
       try {
         const [total, grouped, chapters] = await Promise.all([
           prisma.question.count(),
-          prisma.question.groupBy({ by: ["subject"], _count: { _all: true } }),
+          prisma.question.groupBy({ by: ["subject", "type"], _count: { _all: true } }),
           prisma.question.findMany({ select: { subject: true, chapter: true }, distinct: ["subject", "chapter"], orderBy: [{ subject: "asc" }, { chapter: "asc" }] }),
         ]);
 
         const normalizedGrouped = grouped.map((group) => ({
           subject: getSubjectLabel(group.subject),
+          type: group.type,
           _count: group._count,
         }));
 
@@ -246,37 +248,44 @@ export const getTestsForListing = (studentId?: string, options?: { includeUnpubl
     async () => {
       return withTiming("getTestsForListing", async () => {
         try {
-          const tests = await prisma.test.findMany({
-            where: options?.includeUnpublished ? undefined : { published: true },
-            orderBy: { createdAt: "desc" },
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              durationMinutes: true,
-              totalQuestions: true,
-              mode: true,
-              testCode: true,
-              _count: { select: { attempts: true } },
-              attempts: studentId
-                ? {
-                    where: { studentId },
-                    select: { id: true },
-                  }
-                : false,
-              testQuestions: {
-                distinct: ["subject", "chapter"],
-                select: {
-                  subject: true,
-                  chapter: true,
+          const [tests, studentAttemptCounts] = await Promise.all([
+            prisma.test.findMany({
+              where: options?.includeUnpublished ? undefined : { published: true },
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                durationMinutes: true,
+                totalQuestions: true,
+                mode: true,
+                testCode: true,
+                published: true,
+                config: true,
+                _count: { select: { attempts: true } },
+                testQuestions: {
+                  distinct: ["subject", "chapter"],
+                  select: {
+                    subject: true,
+                    chapter: true,
+                  },
                 },
               },
-            },
-          });
+            }),
+            studentId
+              ? prisma.attempt.groupBy({
+                  by: ["testId"],
+                  where: { studentId },
+                  _count: { _all: true },
+                })
+              : Promise.resolve([]),
+          ]);
+
+          const studentAttemptCountMap = new Map(studentAttemptCounts.map((item) => [item.testId, item._count._all]));
 
           return tests.map((test) => ({
             ...test,
-            studentAttemptCount: studentId ? test.attempts.length : test._count.attempts,
+            studentAttemptCount: studentId ? (studentAttemptCountMap.get(test.id) ?? 0) : test._count.attempts,
           }));
         } catch (error) {
           if (isDatabaseUnavailableError(error)) {
@@ -513,12 +522,12 @@ export async function getAttemptData(attemptId: string, studentId?: string, incl
                       subject: true,
                       chapter: true,
                       type: true,
-                      prompt: !includeCorrectAnswers, // Skip prompt if evaluating
-                      options: !includeCorrectAnswers, // Skip options if evaluating
-                      imagePath: !includeCorrectAnswers, // Skip image if evaluating
+                       prompt: true, // Always include prompt for results display
+                       options: true, // Always include options for results display
+                       imagePath: true, // Always include imagePath for results display
                       correctAnswers: includeCorrectAnswers,
                       answerPolicy: true,
-                      metadata: !includeCorrectAnswers, // Skip metadata if evaluating
+                       metadata: true, // Always include metadata for results display
                     },
                   },
                 },
@@ -883,7 +892,7 @@ export async function persistLiveAttempt(params: {
   });
 }
 
-export async function submitLiveAttempt(attemptId: string, studentId: string) {
+export async function submitLiveAttempt(attemptId: string, studentId: string, autoSubmitted = false) {
   const attempt = await prisma.liveTestAttempt.findUnique({
     where: { id: attemptId, studentId },
     include: {
@@ -925,7 +934,7 @@ export async function submitLiveAttempt(attemptId: string, studentId: string) {
   return prisma.liveTestAttempt.update({
     where: { id: attemptId },
     data: {
-      status: "SUBMITTED",
+      status: autoSubmitted ? "AUTO_SUBMITTED" : "SUBMITTED",
       submittedAt: new Date(),
       score: result.score,
       correctAnswers: result.summary.correct,
@@ -939,6 +948,25 @@ export async function submitLiveAttempt(attemptId: string, studentId: string) {
 
 export async function getLiveLeaderboard(liveTestId: string) {
   return withTiming("getLiveLeaderboard", async () => {
+    // Auto-submit any in-progress attempts when the test window has ended.
+    try {
+      const liveTest = await prisma.liveTest.findUnique({ where: { id: liveTestId }, select: { endTime: true } });
+      if (liveTest && new Date() > liveTest.endTime) {
+        const inProgress = await prisma.liveTestAttempt.findMany({ where: { liveTestId, status: "IN_PROGRESS" }, select: { id: true, studentId: true } });
+        for (const att of inProgress) {
+          try {
+            // mark as auto-submitted and evaluate
+            // pass autoSubmitted=true so status becomes AUTO_SUBMITTED
+            // eslint-disable-next-line no-await-in-loop
+            await submitLiveAttempt(att.id, att.studentId, true);
+          } catch (err) {
+            console.error("Failed to auto-submit live attempt:", att.id, err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error during live leaderboard auto-finalize:", err);
+    }
     const attempts = await prisma.liveTestAttempt.findMany({
       where: {
         liveTestId,
@@ -972,7 +1000,7 @@ export async function getLiveLeaderboard(liveTestId: string) {
 
 export async function getAttemptResult(attemptId: string) {
   return withTiming("getAttemptResult", async () => {
-    return prisma.attempt.findFirst({
+    const attempt = await prisma.attempt.findFirst({
       where: { id: attemptId },
       select: {
         id: true,
@@ -994,6 +1022,59 @@ export async function getAttemptResult(attemptId: string) {
         },
       },
     });
+
+    if (attempt) {
+      return attempt;
+    }
+
+    const liveAttempt = await prisma.liveTestAttempt.findFirst({
+      where: { id: attemptId },
+      select: {
+        id: true,
+        studentName: true,
+        status: true,
+        startedAt: true,
+        submittedAt: true,
+        timeConsumedSeconds: true,
+        result: true,
+        liveTest: {
+          select: {
+            id: true,
+            title: true,
+            testTemplate: {
+              select: {
+                id: true,
+                testCode: true,
+                totalQuestions: true,
+                totalEvaluatedQuestions: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!liveAttempt) {
+      return null;
+    }
+
+    return {
+      id: liveAttempt.id,
+      studentName: liveAttempt.studentName,
+      status: liveAttempt.status,
+      startedAt: liveAttempt.startedAt,
+      submittedAt: liveAttempt.submittedAt,
+      totalTimeSpentSeconds: liveAttempt.timeConsumedSeconds,
+      tabSwitchCount: 0,
+      result: liveAttempt.result,
+      test: {
+        id: liveAttempt.liveTest.testTemplate.id,
+        testCode: liveAttempt.liveTest.testTemplate.testCode,
+        name: liveAttempt.liveTest.title,
+        totalQuestions: liveAttempt.liveTest.testTemplate.totalQuestions,
+        totalEvaluatedQuestions: liveAttempt.liveTest.testTemplate.totalEvaluatedQuestions,
+      },
+    };
   });
 }
 
@@ -1170,3 +1251,26 @@ export const getSubmittedAttemptResults = (studentId?: string) => {
     { revalidate: 60, tags: ["attempts"] }
   )();
 };
+
+// Dummy implementations for test series (pre-existing broken code)
+export async function getTestSeriesGroupsWithDocuments() {
+  return [] as {
+    id: string;
+    title: string;
+    description: string | null;
+    documents: { id: string; title: string; filePath: string }[];
+  }[];
+}
+
+export async function getUngroupedTestSeriesDocuments() {
+  return [] as { id: string; title: string; filePath: string }[];
+}
+
+export async function getTestSeriesGroupById(id: string) {
+  return {
+    id,
+    title: "",
+    description: "",
+    documents: [] as { id: string; title: string; filePath: string }[],
+  };
+}

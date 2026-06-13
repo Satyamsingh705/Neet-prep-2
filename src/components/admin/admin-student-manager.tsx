@@ -36,7 +36,15 @@ export function AdminStudentManager({ students }: AdminStudentManagerProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, displayName }),
       });
-      const payload = await response.json();
+      const text = await response.text();
+      let payload: { error?: string; student?: { username: string } } = {};
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Creation failed: ${text}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to create student.");
@@ -64,7 +72,15 @@ export function AdminStudentManager({ students }: AdminStudentManagerProps) {
 
     try {
       const response = await fetch(`/api/students/${pendingDelete.id}`, { method: "DELETE" });
-      const payload = await response.json();
+      const text = await response.text();
+      let payload: { error?: string } = {};
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Delete failed: ${text}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to delete student.");

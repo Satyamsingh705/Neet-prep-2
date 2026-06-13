@@ -124,7 +124,15 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
         }),
       });
 
-      const payload = await response.json();
+      const text = await response.text();
+      let payload: { error?: string; test?: { name: string } } = {};
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Creation failed: ${text}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Test creation failed.");
@@ -152,7 +160,15 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
     try {
       // 1. Fetch Supabase Configuration
       const configResponse = await fetch("/api/admin/supabase-config");
-      const config = await configResponse.json();
+      const configText = await configResponse.text();
+      let config: any = {};
+      try {
+        config = JSON.parse(configText);
+      } catch {
+        if (!configResponse.ok) {
+          throw new Error(`Failed to load Supabase configuration: ${configText}`);
+        }
+      }
 
       if (!configResponse.ok) {
         throw new Error(config.error ?? "Failed to load Supabase configuration from server.");
@@ -169,6 +185,11 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
       if (jsonFile) {
         setUploadMessage("Parsing JSON file...");
         const jsonText = await jsonFile.text();
+
+        if (/^\s*</.test(jsonText)) {
+          throw new Error("Selected file contains HTML instead of JSON. Upload the raw JSON file.");
+        }
+
         const jsonContent = JSON.parse(jsonText);
         const normalized = Array.isArray(jsonContent) ? jsonContent : [jsonContent];
 
@@ -333,7 +354,15 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
         }),
       });
 
-      const payload = await response.json();
+      const text = await response.text();
+      let payload: { error?: string; message?: string; test?: { name: string } } = {};
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${text}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to create test from upload.");

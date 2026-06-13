@@ -1,5 +1,5 @@
 import { PrismaClient, Subject, QuestionType, AnswerPolicy, TestMode } from "@prisma/client";
-import { createTestWithQuestions } from "../src/lib/test-builder";
+import { createTestWithQuestions, createTestFromUploadedQuestions } from "../src/lib/test-builder";
 import { hashPassword } from "../src/lib/password";
 
 const prisma = new PrismaClient();
@@ -22,7 +22,10 @@ function buildOptions(seed: number) {
 
 async function main() {
   await prisma.attempt.deleteMany();
+  await prisma.liveTestAttempt.deleteMany();
+  await prisma.battleRegistration.deleteMany();
   await prisma.testQuestion.deleteMany();
+  await prisma.liveTest.deleteMany();
   await prisma.test.deleteMany();
   await prisma.question.deleteMany();
   await prisma.admin.deleteMany();
@@ -101,6 +104,56 @@ async function main() {
       passwordHash: hashPassword("admin123"),
     },
   });
+
+  // Add a small 2-question Biology test for quick manual testing.
+  const longPromptLines = Array.from({ length: 50 }, (_, i) => `Line ${i + 1}: This is a long biology test prompt to simulate multiline content.`).join("\n");
+
+  const bioQ1 = await prisma.question.create({
+    data: {
+      subject: Subject.BIOLOGY,
+      chapter: "Genetics",
+      type: QuestionType.TEXT,
+      prompt: `Bio Q1 - Multiline Prompt\n${longPromptLines}`,
+      options: [
+        { key: "A", text: "Option A: Cell division details" },
+        { key: "B", text: "Option B: DNA replication concept" },
+        { key: "C", text: "Option C: Mendelian inheritance point" },
+        { key: "D", text: "Option D: Chromosomal anomaly" },
+      ],
+      correctAnswers: ["B"],
+      answerPolicy: AnswerPolicy.SINGLE,
+    },
+  });
+
+  const bioQ2 = await prisma.question.create({
+    data: {
+      subject: Subject.BIOLOGY,
+      chapter: "Ecology",
+      type: QuestionType.TEXT,
+      prompt: `Bio Q2 - Multiline Prompt\n${longPromptLines}`,
+      options: [
+        { key: "A", text: "Option A: Food chain dynamics" },
+        { key: "B", text: "Option B: Biome classification" },
+        { key: "C", text: "Option C: Population growth model" },
+        { key: "D", text: "Option D: Ecosystem services" },
+      ],
+      correctAnswers: ["C"],
+      answerPolicy: AnswerPolicy.SINGLE,
+    },
+  });
+
+  await createTestFromUploadedQuestions(prisma, {
+    name: "Biology Quick 2-Q Test",
+    description: "Two long multiline biology questions for UI/testing.",
+    durationMinutes: 10,
+    correctMarks: 4,
+    incorrectMarks: -1,
+    unansweredMarks: 0,
+    published: true,
+  }, [
+    { id: bioQ1.id, subject: bioQ1.subject, chapter: bioQ1.chapter },
+    { id: bioQ2.id, subject: bioQ2.subject, chapter: bioQ2.chapter },
+  ]);
 
   console.log(`Seeded ${questions.length} questions and demo tests.`);
 }

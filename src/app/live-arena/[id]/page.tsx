@@ -29,66 +29,82 @@ export default async function LiveTestDetailPage({ params }: { params: Promise<{
   }
 
   return (
-    <main className="mx-auto flex max-w-[900px] flex-col gap-10 px-6 py-16">
-      <section className="text-center">
-        <div className="flex justify-center mb-8">
+    <main className="mx-auto flex max-w-[1000px] flex-col gap-16 px-6 py-20 bg-slate-50 min-h-screen">
+      <section className="text-center space-y-8">
+        <div className="flex justify-center">
           {isLive && (
-            <span className="inline-flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-1.5 text-sm font-black uppercase tracking-widest text-red-600 ring-1 ring-inset ring-red-200">
-               <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+            <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-sm">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
                 </span>
-               Live Now
-            </span>
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">Live Now</span>
+            </div>
           )}
-          {isScheduled && <span className="inline-flex items-center rounded-full bg-blue-500/10 px-4 py-1.5 text-sm font-black uppercase tracking-widest text-blue-600 ring-1 ring-inset ring-blue-200">Upcoming Arena</span>}
-          {isEnded && <span className="inline-flex items-center rounded-full bg-slate-500/10 px-4 py-1.5 text-sm font-black uppercase tracking-widest text-slate-600 ring-1 ring-inset ring-slate-200">Challenge Concluded</span>}
+          {isScheduled && (
+            <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-sm">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Upcoming Arena</span>
+            </div>
+          )}
+          {isEnded && (
+            <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-zinc-500/10 border border-zinc-500/20 shadow-sm">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-600">Arena Closed</span>
+            </div>
+          )}
         </div>
-        <h1 className="text-4xl font-black tracking-tight text-[#2f241c] sm:text-6xl">{liveTest.title}</h1>
-        <p className="mx-auto mt-8 max-w-2xl text-lg leading-8 text-[#6d5a49]">{liveTest.description}</p>
+        
+        <div className="space-y-4">
+            <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-zinc-900 leading-[0.95] max-w-4xl mx-auto">
+                {liveTest.title}
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg sm:text-xl font-medium text-zinc-500 leading-relaxed">
+                {liveTest.description}
+            </p>
+        </div>
       </section>
 
-      <div className="grid gap-8">
-        <section className="relative overflow-hidden rounded-[2.5rem] bg-white p-8 shadow-2xl ring-1 ring-[#e6d9cb] sm:p-14">
-          <div className="absolute right-0 top-0 h-32 w-32 translate-x-10 -translate-y-10 rounded-full bg-orange-100/50 blur-3xl" />
+      <div className="grid gap-12">
+        <section className="relative overflow-hidden rounded-[48px] bg-[#09090b] p-10 sm:p-20 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-white/5">
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[500px] h-[500px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-[400px] h-[400px] bg-emerald-600/10 blur-[100px] rounded-full pointer-events-none" />
           
-          <div className="relative flex flex-col items-center">
+          <div className="relative z-10 flex flex-col items-center">
             {isScheduled && (
-              <div className="w-full">
-                <LiveCountdown targetDate={liveTest.startTime.toISOString()} title="T-Minus To Battle" />
+              <div className="w-full mb-12">
+                <LiveCountdown targetDate={liveTest.startTime.toISOString()} title="Countdown to Battle" />
               </div>
             )}
 
             {isLive && (
-              <div className="text-center">
-                 <div className="text-5xl mb-6">🌩️</div>
-                 <h2 className="text-3xl font-black text-[#2f241c]">The arena is wide open</h2>
-                 <p className="mt-4 text-[#6d5a49]">Enter now and secure your ranking among the best.</p>
+              <div className="text-center mb-12 space-y-4">
+                 <div className="text-6xl mb-6">🌩️</div>
+                 <h2 className="text-4xl font-black text-white tracking-tight">The Arena is Live</h2>
+                 <p className="text-zinc-400 text-lg font-medium">Join thousands of battlers and prove your mettle.</p>
               </div>
             )}
 
             {isEnded && (
-              <div className="text-center">
-                 <div className="text-5xl mb-6">🏆</div>
-                 <h2 className="text-3xl font-black text-[#2f241c]">Final rankings are out</h2>
-                 <p className="mt-4 text-[#6d5a49]">The challenge has finished. See how you performed against others.</p>
+              <div className="text-center mb-12 space-y-4">
+                 <div className="text-6xl mb-6">🏆</div>
+                 <h2 className="text-4xl font-black text-white tracking-tight">Challenge Concluded</h2>
+                 <p className="text-zinc-400 text-lg font-medium">The results are finalized. Witness the winners on the podium.</p>
               </div>
             )}
 
-            <div className="mt-14 grid w-full gap-4 sm:grid-cols-2">
-                <InfoCard icon="📅" label="Starts At" value={formatDateTime(liveTest.startTime)} />
-                <InfoCard icon="🏁" label="Ends At" value={formatDateTime(liveTest.endTime)} />
-                <InfoCard icon="📝" label="Format" value={`${liveTest.testTemplate.totalQuestions} Multiple Choice`} />
-                <InfoCard icon="⚡" label="Time Limit" value={`${liveTest.durationMinutes} Minutes`} />
+            <div className="grid w-full gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <InfoCard icon={<CalendarIconDetail />} label="Start Time" value={formatDateTime(liveTest.startTime)} />
+                <InfoCard icon={<CheckCircleIconDetail />} label="End Time" value={formatDateTime(liveTest.endTime)} />
+                <InfoCard icon={<BookOpenIconDetail />} label="Format" value={`${liveTest.testTemplate.totalQuestions} Questions`} />
+                <InfoCard icon={<TimerIconDetail />} label="Duration" value={`${liveTest.durationMinutes} Minutes`} />
             </div>
 
-            <div className="mt-14 w-full max-w-sm">
+            <div className="mt-16 w-full max-w-sm">
                 {!student ? (
-                    <Link href="/" className="flex w-full items-center justify-center rounded-2xl bg-orange-600 py-5 text-lg font-black uppercase tracking-widest text-white shadow-xl shadow-orange-200 transition-all hover:bg-orange-500 hover:scale-105 active:scale-95">
+                    <Link href="/" className="flex w-full items-center justify-center rounded-[24px] bg-white py-6 text-lg font-black uppercase tracking-[0.2em] text-zinc-900 shadow-xl shadow-white/10 transition-all hover:bg-zinc-100 hover:scale-[1.02] active:scale-[0.98]">
                         Sign In To Enter 🚀
                     </Link>
                 ) : isEnded ? (
-                    <Link href={`/live-arena/${id}/leaderboard`} className="flex w-full items-center justify-center rounded-2xl bg-[#2f241c] py-5 text-lg font-black uppercase tracking-widest text-white shadow-xl shadow-slate-200 transition-all hover:bg-black hover:scale-105 active:scale-95">
+                    <Link href={`/live-arena/${id}/leaderboard`} className="flex w-full items-center justify-center rounded-[24px] bg-indigo-600 py-6 text-lg font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-indigo-500/20 transition-all hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.98]">
                         View Podium 🏆
                     </Link>
                 ) : (
@@ -98,27 +114,20 @@ export default async function LiveTestDetailPage({ params }: { params: Promise<{
           </div>
         </section>
 
-        <section className="rounded-[2rem] bg-[#fcfbf8] p-10 ring-1 ring-inset ring-[#e6d9cb]">
-            <h3 className="text-xl font-black text-[#2f241c] flex items-center gap-3">
-                <span>🛡️</span> Arena Protocols
-            </h3>
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 text-sm leading-relaxed text-[#6d5a49]">
-                <div className="flex gap-4">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-700">1</span>
-                    <p>Every participant starts and ends at the exact same moment. No extensions granted.</p>
+        <section className="rounded-[40px] bg-white p-10 sm:p-14 shadow-sm border border-zinc-200/60">
+            <div className="flex items-center gap-4 mb-10">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                    <ShieldIconDetail />
                 </div>
-                <div className="flex gap-4">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-700">2</span>
-                    <p>Late entry is permitted, but your timer will be reduced based on the remaining window.</p>
-                </div>
-                <div className="flex gap-4">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-700">3</span>
-                    <p>Automated submission is enforced at the precise end time. Autosave happens every 15s.</p>
-                </div>
-                <div className="flex gap-4">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-700">4</span>
-                    <p>Rankings prioritize Marks, followed by completion Speed, then submission Timestamp.</p>
-                </div>
+                <h3 className="text-2xl font-black text-zinc-900 tracking-tight">
+                    Arena Protocols
+                </h3>
+            </div>
+            <div className="grid gap-10 sm:grid-cols-2">
+                <ProtocolItem number={1} title="Uniform Timing" description="Every participant starts and ends at the exact same moment. No extensions granted." />
+                <ProtocolItem number={2} title="Late Entry Policy" description="Late entry is permitted, but your timer will be reduced based on the remaining window." />
+                <ProtocolItem number={3} title="Force Submission" description="Automated submission is enforced at the precise end time. Autosave happens every 15s." />
+                <ProtocolItem number={4} title="Ranking Logic" description="Rankings prioritize Marks, followed by completion Speed, then submission Timestamp." />
             </div>
         </section>
       </div>
@@ -126,16 +135,47 @@ export default async function LiveTestDetailPage({ params }: { params: Promise<{
   );
 }
 
-function InfoCard({ icon, label, value }: { icon: string; label: string; value: string }) {
+function InfoCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
     return (
-        <div className="group flex items-center gap-4 rounded-3xl bg-[#fcfbf8] p-5 ring-1 ring-inset ring-[#e6d9cb] transition-all hover:bg-white hover:shadow-lg">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-[#e6d9cb] group-hover:scale-110 transition-transform">{icon}</div>
+        <div className="group flex flex-col gap-4 rounded-[28px] bg-white/5 p-6 border border-white/10 hover:bg-white/[0.08] transition-all backdrop-blur-sm">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-zinc-400 shadow-sm border border-white/5 group-hover:text-white transition-colors">{icon}</div>
             <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#8a6a52]">{label}</span>
-                <span className="mt-0.5 text-sm font-bold text-[#2f241c]">{value}</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">{label}</span>
+                <span className="mt-1 text-sm font-black text-white tracking-tight">{value}</span>
             </div>
         </div>
     );
 }
+
+function ProtocolItem({ number, title, description }: { number: number, title: string, description: string }) {
+    return (
+        <div className="flex gap-6">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-sm font-black text-white shadow-lg shadow-zinc-900/10">{number}</span>
+            <div className="space-y-1.5">
+                <h4 className="text-base font-black text-zinc-900 tracking-tight">{title}</h4>
+                <p className="text-zinc-500 text-sm font-medium leading-relaxed">{description}</p>
+            </div>
+        </div>
+    );
+}
+
+/* ICONS */
+
+const CalendarIconDetail = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+);
+const CheckCircleIconDetail = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+);
+const BookOpenIconDetail = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+);
+const TimerIconDetail = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+);
+const ShieldIconDetail = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+);
+
 
 import Link from "next/link";

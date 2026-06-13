@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getLiveTestData } from "@/lib/data";
 import { requireCurrentStudent } from "@/lib/student-auth";
-import { LiveExamClient } from "@/components/live/live-exam-client";
+import { ExamClient } from "@/components/exam/exam-client";
 
 export default async function LiveExamPage({ params }: { params: Promise<{ id: string }> }) {
   const student = await requireCurrentStudent();
@@ -27,16 +27,29 @@ export default async function LiveExamPage({ params }: { params: Promise<{ id: s
       redirect(`/live-arena/${id}`);
   }
 
+  const remainingMs = Math.max(0, liveTest.endTime.getTime() - now.getTime());
+  const durationMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
+
+  const test = {
+    id: liveTest.id,
+    testCode: liveTest.code ?? null,
+    name: liveTest.title,
+    durationMinutes,
+    totalQuestions: questions.length,
+    mode: "LIVE",
+  };
+
   return (
-    <LiveExamClient
+    <ExamClient
       attemptId={attempt.id}
-      liveTestId={id}
       studentName={student.displayName ?? student.username}
-      title={liveTest.title}
-      endTime={liveTest.endTime.toISOString()}
-      questions={questions}
+      test={test}
       initialAnswers={attempt.answers as any}
-      initialTimeConsumed={attempt.timeConsumedSeconds}
+      initialCurrentQuestionIndex={1}
+      questions={questions}
+      startedAt={attempt.startedAt?.toISOString?.() ?? new Date().toISOString()}
+      initialTabSwitchCount={0}
+      initialTotalTimeSpentSeconds={attempt.timeConsumedSeconds ?? 0}
     />
   );
 }

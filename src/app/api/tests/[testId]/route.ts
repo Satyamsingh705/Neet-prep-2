@@ -41,6 +41,17 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     }
 
     const { testId } = await params;
+
+    const activeLiveTests = await prisma.liveTest.count({ where: { testTemplateId: testId } });
+    if (activeLiveTests > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete this test because it is used by one or more live tests. Delete the live test events first.",
+        },
+        { status: 400 }
+      );
+    }
+
     await prisma.test.delete({ where: { id: testId } });
     return NextResponse.json({ ok: true });
   } catch (error) {
