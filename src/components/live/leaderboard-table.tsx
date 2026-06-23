@@ -10,7 +10,7 @@ type LeaderboardEntry = {
     percentile: number;
 };
 
-export function LeaderboardTable({ entries, currentStudentId }: { entries: LeaderboardEntry[]; currentStudentId?: string }) {
+export function LeaderboardTable({ entries, currentStudentId, totalMarks }: { entries: LeaderboardEntry[]; currentStudentId?: string; totalMarks?: number }) {
     return (
         <div className="overflow-hidden rounded-2xl border border-[#e6d9cb] bg-white shadow-sm">
             <table className="min-w-full border-collapse text-left text-sm">
@@ -46,7 +46,7 @@ export function LeaderboardTable({ entries, currentStudentId }: { entries: Leade
                                 </div>
                             </td>
                             <td className="px-6 py-4 text-right whitespace-nowrap">
-                                <span className="font-black text-[#d7671b] text-base">{entry.score}</span>
+                                <span className="font-black text-[#d7671b] text-base">{totalMarks ? `${entry.score} / ${totalMarks}` : entry.score}</span>
                             </td>
                             <td className="px-6 py-4 text-right whitespace-nowrap text-[#6d5a49]">
                                 {formatTime(entry.timeConsumedSeconds)}

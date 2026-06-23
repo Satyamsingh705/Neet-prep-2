@@ -9,6 +9,8 @@ function shouldRefreshForPath(pathname: string) {
     || pathname === "/analysis"
     || pathname === "/admin"
     || pathname === "/admin/tests"
+    || pathname === "/admin/live-tests"
+    || pathname.startsWith("/live-arena")
     || pathname.startsWith("/sections/");
 }
 
@@ -62,6 +64,27 @@ export function LiveUpdateListener() {
     };
 
     const interval = window.setInterval(refresh, 15000);
+    // Poll server-side last-update timestamp for instant cross-instance updates
+    let lastServerTimestamp = 0;
+    let serverPollInterval: number | null = null;
+    const pollServer = async () => {
+      try {
+        const res = await fetch("/api/live-updates/last");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.timestamp && data.timestamp !== lastServerTimestamp) {
+          lastServerTimestamp = data.timestamp;
+          refresh();
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    // Start polling every 3s for faster propagation
+    serverPollInterval = window.setInterval(pollServer, 3000);
+    // run immediately once
+    void pollServer();
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
@@ -78,6 +101,7 @@ export function LiveUpdateListener() {
 
     return () => {
       window.clearInterval(interval);
+      if (serverPollInterval) window.clearInterval(serverPollInterval);
       window.removeEventListener("focus", refresh);
       window.removeEventListener("storage", handleStorage);
       document.removeEventListener("visibilitychange", handleVisibilityChange);

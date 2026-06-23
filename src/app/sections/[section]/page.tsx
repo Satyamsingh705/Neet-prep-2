@@ -4,9 +4,15 @@ import { getTestsForListing } from "@/lib/data";
 import { getTestsBySection, studentSections, type StudentSectionId } from "@/lib/student-sections";
 import { requireCurrentStudent } from "@/lib/student-auth";
 
+// ISOLATION: This page shows ONLY regular tests (Test table)
+// Arena/Competitive tests (LiveTest table) are NOT shown here
+// Arena tests are shown ONLY at /live-arena
+
 export default async function StudentSectionPage({ params }: { params: Promise<{ section: string }> }) {
   const student = await requireCurrentStudent();
   const { section } = await params;
+  
+  // Fetch ONLY from Test table - NOT from LiveTest table
   const tests = await getTestsForListing(student.id);
   const sectionId = section as StudentSectionId;
   const activeSection = studentSections.find((item) => item.id === sectionId);

@@ -244,6 +244,10 @@ export async function getStudentAttemptCount(studentId: string) {
 }
 
 export const getTestsForListing = (studentId?: string, options?: { includeUnpublished?: boolean }) => {
+  // IMPORTANT: This fetches ONLY regular tests from the Test table
+  // These are for major tests and subject sections at /sections/*
+  // Arena/Competitive tests are in LiveTest table and shown at /live-arena only
+  // There should be NO overlap between these two - they are completely isolated
   return unstable_cache(
     async () => {
       return withTiming("getTestsForListing", async () => {
@@ -745,6 +749,9 @@ export async function submitAttempt(attemptId: string, autoSubmitted = false, st
 }
 
 export async function getLiveArenaData(studentId?: string) {
+  // IMPORTANT: Arena/Live Tests are ONLY fetched from LiveTest table
+  // Regular tests (from Test table) should NEVER appear in the arena section
+  // Arena section (/live-arena) is completely isolated from major/subject test sections
   return withTiming("getLiveArenaData", async () => {
     try {
       const [liveTests, studentStats, registeredBattleIds] = await Promise.all([

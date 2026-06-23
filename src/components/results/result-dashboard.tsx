@@ -201,7 +201,7 @@ function QuestionList({ questions }: { questions: ResultDashboardProps["result"]
               <QuestionContent
                  prompt={getDisplayPrompt(question.prompt) || (question.type === "IMAGE" ? "Image based question" : "Question")}
                 table={question.table}
-                promptClassName="mt-2 text-sm leading-6 text-[#4f4338] whitespace-pre-line"
+                promptClassName="mt-2 text-base leading-7 text-[#4f4338] whitespace-pre-line"
                 tableClassName="mt-4"
               />
               {question.type === "IMAGE" && question.imagePath ? (
@@ -215,7 +215,7 @@ function QuestionList({ questions }: { questions: ResultDashboardProps["result"]
                 </div>
               ) : null}
               {question.options && question.options.length > 0 ? (
-                <div className="mt-4 space-y-2 text-sm text-[#5d4d40]">
+                <div className="mt-4 space-y-2 text-base text-[#5d4d40]">
                   {question.options.map((option) => {
                     const optionState = getOptionState(question, option.key);
 

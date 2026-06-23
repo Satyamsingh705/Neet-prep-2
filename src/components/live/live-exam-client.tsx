@@ -60,7 +60,7 @@ const QuestionDisplay = React.memo(({
                 <div className="shrink-0 pt-1 text-[0.8rem] font-semibold leading-none text-[#dd504a]">
                     Q {String(question.orderIndex).padStart(2, "0")} of {String(totalQuestions).padStart(2, "0")}
                 </div>
-                <div className={`min-w-0 max-w-[900px] text-[#2d241d] ${isImageQuestion ? "text-[0.88rem] leading-6 sm:text-[0.92rem] lg:text-[0.94rem]" : "text-[0.94rem] leading-7 sm:text-[0.98rem] lg:text-[1.02rem]"}`}>
+                <div className={`min-w-0 max-w-[900px] text-[#2d241d] ${isImageQuestion ? "text-[0.96rem] leading-7 sm:text-[1rem] lg:text-[1.05rem]" : "text-[1.02rem] leading-8 sm:text-[1.1rem] lg:text-[1.15rem]"}`}>
                     {question.type === "TEXT" ? (
                         <QuestionContent
                             prompt={prompt}
@@ -85,8 +85,8 @@ const QuestionDisplay = React.memo(({
             ) : null}
 
             <div className={`mt-4 max-w-[760px] ${isImageQuestion ? "lg:mt-3" : ""}`}>
-                <div className={`font-semibold text-[#dd504a] ${isImageQuestion ? "text-[0.96rem] sm:text-[1rem]" : "text-[1.05rem] sm:text-[1.15rem]"}`}>Options :</div>
-                <div className={`mt-2 text-[#322920] ${isImageQuestion ? "space-y-2 text-[0.88rem] leading-6 sm:text-[0.92rem]" : "space-y-3 text-[0.96rem] leading-7"}`}>
+                <div className={`font-semibold text-[#dd504a] ${isImageQuestion ? "text-[1.04rem] sm:text-[1.08rem]" : "text-[1.15rem] sm:text-[1.25rem]"}`}>Options :</div>
+                <div className={`mt-2 text-[#322920] ${isImageQuestion ? "space-y-2 text-[0.96rem] leading-7 sm:text-[1rem]" : "space-y-3 text-[1.04rem] leading-8"}`}>
                     {(question.options ?? []).map((option: any) => (
                         <label key={option.key} className="flex cursor-pointer items-start gap-3">
                             <input

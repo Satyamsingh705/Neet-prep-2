@@ -15,7 +15,7 @@ type Entry = {
     percentile: number;
 };
 
-export function RealtimeLeaderboard({ liveTestId, initialEntries, currentStudentId }: { liveTestId: string; initialEntries: Entry[]; currentStudentId?: string }) {
+export function RealtimeLeaderboard({ liveTestId, initialEntries, currentStudentId, totalMarks }: { liveTestId: string; initialEntries: Entry[]; currentStudentId?: string; totalMarks?: number }) {
     const [entries, setEntries] = useState<Entry[]>(initialEntries);
 
     useEffect(() => {
@@ -66,13 +66,13 @@ export function RealtimeLeaderboard({ liveTestId, initialEntries, currentStudent
             {myEntry && (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                     <StatCard label="Your Rank" value={`#${myEntry.rank}`} color="text-[#d7671b]" />
-                    <StatCard label="Your Score" value={myEntry.score} color="text-[#2f241c]" />
+                    <StatCard label="Your Score" value={totalMarks ? `${myEntry.score} / ${totalMarks}` : myEntry.score} color="text-[#2f241c]" />
                     <StatCard label="Top Score" value={topEntry?.score ?? 0} color="text-[#49a84f]" />
                     <StatCard label="Gap" value={`-${(topEntry?.score ?? 0) - myEntry.score}`} color="text-[#d85b58]" />
                 </div>
             )}
 
-            <LeaderboardTable entries={entries} currentStudentId={currentStudentId} />
+            <LeaderboardTable entries={entries} currentStudentId={currentStudentId} totalMarks={totalMarks} />
         </div>
     );
 }

@@ -78,6 +78,8 @@ export function getSectionChapters(test: ListedTest, category: AdminSubjectCateg
 export function getSectionTests(tests: ListedTest[], category: AdminSubjectCategory) {
   return tests
     .filter((test) => {
+      // Exclude any tests that might be used as arena templates
+      // Arena tests should ONLY appear in the live-arena section, not in subject sections
       const assignedSection = getAssignedSection(test);
 
       return assignedSection ? assignedSection === category : true;
@@ -90,12 +92,16 @@ export function getSectionTests(tests: ListedTest[], category: AdminSubjectCateg
 }
 
 export function getMajorTests(tests: ListedTest[]) {
+  // Major tests should ONLY be published tests with NEET_PATTERN mode
+  // These are regular exam templates, NOT arena/competitive tests
+  // Arena tests are managed separately in the LiveTest table and shown at /live-arena only
   return tests
     .filter(
       (test) =>
-        test.mode === "NEET_PATTERN"
+        test.published && // Only published tests
+        (test.mode === "NEET_PATTERN"
         || getAssignedSection(test) === "MAJOR_TEST"
-        || test.testQuestions.some((question) => isSubjectInCategory(question.subject, "MAJOR_TEST")),
+        || test.testQuestions.some((question) => isSubjectInCategory(question.subject, "MAJOR_TEST"))),
     )
     .map((test) => ({
       ...test,

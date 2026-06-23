@@ -38,7 +38,7 @@ export function AdminTestList({ tests }: AdminTestListProps) {
         body: JSON.stringify({ published: !published }),
       });
       const text = await response.text();
-      let payload: { error?: string } = {};
+      let payload: { error?: string; test?: { published: boolean } } = {};
       try {
         payload = JSON.parse(text);
       } catch {
@@ -52,8 +52,12 @@ export function AdminTestList({ tests }: AdminTestListProps) {
       }
 
       setMessage(`${published ? "Unpublished" : "Published"} test: ${testName}`);
-  broadcastTestsChanged();
-      router.refresh();
+      // Broadcast change to other connected clients and trigger a full page refresh
+      broadcastTestsChanged();
+      // Use a small delay to ensure server cache is revalidated before refresh
+      setTimeout(() => {
+        router.refresh();
+      }, 100);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to update test.");
     } finally {
@@ -70,8 +74,9 @@ export function AdminTestList({ tests }: AdminTestListProps) {
     setMessage("");
 
     try {
-      const response = await fetch(`/api/tests/${pendingDelete.id}`, { method: "DELETE" });
-      const text = await response.text();
+      // First attempt without forcing
+      let response = await fetch(`/api/tests/${pendingDelete.id}`, { method: "DELETE" });
+      let text = await response.text();
       let payload: { error?: string } = {};
       try {
         payload = JSON.parse(text);
@@ -82,12 +87,40 @@ export function AdminTestList({ tests }: AdminTestListProps) {
       }
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to delete test.");
-      }
+        // If the server complains because live tests exist, offer force-delete
+        if (payload.error && payload.error.includes("used by one or more live tests")) {
+          const confirmForce = window.confirm(
+            "This test is used by one or more scheduled live events. Do you want to force delete the test and remove associated live events?"
+          );
 
-      setMessage(`Deleted test: ${pendingDelete.name}`);
-  broadcastTestsChanged();
-      router.refresh();
+          if (confirmForce) {
+            // Retry with force flag
+            response = await fetch(`/api/tests/${pendingDelete.id}?force=1`, { method: "DELETE" });
+            text = await response.text();
+            try {
+              payload = JSON.parse(text);
+            } catch {
+              if (!response.ok) throw new Error(`Delete failed: ${text}`);
+            }
+
+            if (!response.ok) {
+              throw new Error(payload.error ?? "Failed to delete test.");
+            }
+
+            setMessage(`Deleted test (forced): ${pendingDelete.name}`);
+            broadcastTestsChanged();
+            router.refresh();
+          } else {
+            throw new Error(payload.error ?? "Failed to delete test.");
+          }
+        } else {
+          throw new Error(payload.error ?? "Failed to delete test.");
+        }
+      } else {
+        setMessage(`Deleted test: ${pendingDelete.name}`);
+        broadcastTestsChanged();
+        router.refresh();
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to delete test.");
     } finally {

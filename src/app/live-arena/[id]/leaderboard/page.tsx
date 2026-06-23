@@ -18,6 +18,12 @@ export default async function LiveLeaderboardPage({ params }: { params: Promise<
 
   const { liveTest } = data;
 
+  // Compute total marks for the test template (use totalEvaluatedQuestions if present)
+  const testTemplate = liveTest.testTemplate;
+  const perQuestion = testTemplate.correctMarks ?? 0;
+  const questionCount = testTemplate.totalEvaluatedQuestions ?? testTemplate.totalQuestions ?? 0;
+  const totalMarks = perQuestion * questionCount;
+
   return (
     <main className="mx-auto flex max-w-[1000px] flex-col gap-8 px-6 py-12">
       <section className="text-center">
@@ -29,7 +35,8 @@ export default async function LiveLeaderboardPage({ params }: { params: Promise<
       <RealtimeLeaderboard 
         liveTestId={id} 
         initialEntries={initialEntries} 
-        currentStudentId={student?.id} 
+        currentStudentId={student?.id}
+        totalMarks={totalMarks}
       />
     </main>
   );

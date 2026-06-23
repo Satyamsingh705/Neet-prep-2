@@ -2,6 +2,10 @@ import { requireCurrentStudent } from "@/lib/student-auth";
 import { getLiveArenaData } from "@/lib/data";
 import { LiveArenaClient } from "@/components/live/live-arena-client";
 
+// ISOLATION: This page shows ONLY arena/competitive tests (LiveTest table)
+// Regular tests (Test table) are NOT shown here
+// Regular tests are shown in /sections/* pages
+
 export default async function LiveArenaPage() {
   const student = await requireCurrentStudent();
   const data = await getLiveArenaData(student.id);

@@ -82,68 +82,67 @@ const QuestionBody = React.memo(({
     const prompt = getDisplayPrompt(question.prompt ?? "");
 
     return (
-    <div className="w-full text-[#4d3d31]">
-      {/* Question number displayed in header; removed duplicate here */}
+      <div className="w-full text-black">
+        {/* Question number displayed in header; removed duplicate here */}
 
-      <div className="prose prose-sm max-w-none text-[1rem] leading-8 text-[#4d3d31]">
-        {question.type === "TEXT" ? (
-          <QuestionContent
-            prompt={prompt}
-            table={question.table}
-            promptClassName="whitespace-pre-line text-[1rem] leading-8"
-            tableClassName="mt-6"
-          />
-        ) : (
-          <div className="mb-6 text-[1rem]">Image based question</div>
-        )}
+        <div className="prose prose-sm max-w-none text-[1.125rem] leading-9 text-black">
+          {question.type === "TEXT" ? (
+            <QuestionContent
+              prompt={prompt}
+              table={question.table}
+              promptClassName="whitespace-pre-line text-[1.125rem] leading-9"
+              tableClassName="mt-6"
+            />
+          ) : (
+            <div className="mb-6 text-[1.125rem]">Image based question</div>
+          )}
+        </div>
+
+        {question.type === "IMAGE" && question.imagePath ? (
+          <div className="my-6 rounded-[0.9rem] border border-[#ddd0c3] bg-white p-4 shadow-sm">
+            <Image
+              src={question.imagePath}
+              alt={`Question ${question.orderIndex}`}
+              width={1200}
+              height={600}
+              className="mx-auto h-auto max-w-full rounded-[0.75rem]"
+              priority
+            />
+          </div>
+        ) : null}
+
+        <div className="mt-6 space-y-3.5">
+          {(question.options ?? fallbackOptions).map((option) => {
+            const isSelected = answer.selectedOptions.includes(option.key);
+            return (
+              <button
+                key={option.key}
+                type="button"
+                className={`flex w-full items-center gap-4 rounded-[0.45rem] border px-4 py-2.5 text-left text-[1.125rem] transition ${isSelected ? 'border-[#1f7a48] bg-[#daf4dc] text-[#17482e] shadow-sm' : 'border-[#d8cdc0] bg-white text-black hover:border-[#c8b8a6]'}`}
+                onClick={() => (usesMultipleAnswers ? onToggleOption(option.key) : onSelectOption(option.key))}
+              >
+                <div className={`flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 ${isSelected ? 'border-[#1f7a48] bg-[#1f7a48]' : 'border-[#b8ac9e] bg-white'}`}>
+                  {isSelected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
+                </div>
+                <div className="min-w-0 flex-1 text-black">{renderQuestionText(option.text)}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          className="mt-6 text-[0.98rem] font-normal text-black hover:text-gray-700 transition-colors"
+          onClick={onClear}
+        >
+          Clear Response
+        </button>
       </div>
-
-      {question.type === "IMAGE" && question.imagePath ? (
-        <div className="my-6 rounded-[0.9rem] border border-[#ddd0c3] bg-white p-4 shadow-sm">
-          <Image
-            src={question.imagePath}
-            alt={`Question ${question.orderIndex}`}
-            width={1200}
-            height={600}
-            className="mx-auto h-auto max-w-full rounded-[0.75rem]"
-            priority
-          />
-        </div>
-      ) : null}
-
-      <div className="mt-6 space-y-3.5">
-                {(question.options ?? fallbackOptions).map((option) => {
-                    const isSelected = answer.selectedOptions.includes(option.key);
-                    return (
-            <button 
-                            key={option.key} 
-              type="button"
-              className={`flex w-full items-center gap-4 rounded-[0.45rem] border px-4 py-2.5 text-left text-[0.98rem] transition ${isSelected ? 'border-[#1f7a48] bg-[#daf4dc] text-[#17482e] shadow-sm' : 'border-[#d8cdc0] bg-white text-[#4d3d31] hover:border-[#c8b8a6]'}`}
-                            onClick={() => usesMultipleAnswers ? onToggleOption(option.key) : onSelectOption(option.key)}
-                        >
-              <div className={`flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 ${isSelected ? 'border-[#1f7a48] bg-[#1f7a48]' : 'border-[#b8ac9e] bg-white'}`}>
-                {isSelected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
-              </div>
-              <div className="min-w-0 flex-1">
-                                {renderQuestionText(option.text)}
-                            </div>
-            </button>
-                    );
-                })}
-            </div>
-
-            <button 
-              type="button" 
-              className="mt-6 text-[0.98rem] font-normal text-sky-500 hover:text-sky-600 transition-colors"
-              onClick={onClear}
-            >
-              Clear Response
-            </button>
-        </div>
     );
-});
 
-QuestionBody.displayName = "QuestionBody";
+  });
+
+  QuestionBody.displayName = "QuestionBody";
 
 // Isolated Timer Component
 const ExamTimer = React.memo(({ initialSeconds, onExpire }: { initialSeconds: number; onExpire: () => void }) => {
@@ -402,7 +401,7 @@ export function ExamClient(props: ExamClientProps) {
   const progressPercent = Math.round((counts.answered / props.test.totalQuestions) * 100);
 
   return (
-    <div className="h-screen overflow-hidden bg-[#f4efe6] text-[#4d3d31]">
+    <div className="h-screen overflow-hidden bg-[#f4efe6] text-black">
       <div className="flex h-screen w-full flex-col">
         <header className="grid grid-cols-[140px_1fr] overflow-hidden rounded-t-[0.5rem] border border-[#ddd0c3] bg-[#f7f2ea] shadow-[0_1px_6px_rgba(92,70,48,0.06)]">
           <div className="flex items-center border-r border-[#ddd0c3] px-3 py-2">
@@ -449,7 +448,7 @@ export function ExamClient(props: ExamClientProps) {
                       const status = getPaletteStatus(answers[q.id] ?? blankAnswer());
                       const isCurrent = q.orderIndex === currentQuestionIndex;
 
-                      let statusClass = "bg-[#d8dde6] text-[#2f2f2f] border-[#b8c0cb]";
+                      let statusClass = "bg-[#d8dde6] text-black border-[#b8c0cb]";
                       if (status === "ANSWERED" || status === "ANSWERED_REVIEW") statusClass = "bg-[#69b86b] text-white border-[#4a9851]";
                       else if (status === "REVIEW") statusClass = "bg-[#f0b03f] text-white border-[#da9a28]";
                       if (isCurrent) statusClass = "bg-[#d96359] text-white border-[#b54f47] shadow-[0_0_0_2px_rgba(217,99,89,0.2)]";
