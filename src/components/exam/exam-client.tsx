@@ -325,14 +325,42 @@ export function ExamClient(props: ExamClientProps) {
     };
     const handlePageHide = () => {
       if (!submittedRef.current) {
+        submittedRef.current = true;
         const state = getLatestState();
-        const body = new Blob([JSON.stringify(state)], { type: "application/json" });
+        const jsonBody = JSON.stringify(state);
+
         if (props.test.mode === "LIVE") {
-          // Use the live attempts submit endpoint which evaluates and marks AUTO_SUBMITTED
-          navigator.sendBeacon(`/api/live-attempts/${props.attemptId}/submit?auto=1`, body);
+          // First save answers, then submit
+          fetch(`/api/live-attempts/${props.attemptId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: jsonBody,
+            keepalive: true,
+          }).catch(() => {
+            // Silently fail on save, still attempt submit
+          }).finally(() => {
+            navigator.sendBeacon(
+              `/api/live-attempts/${props.attemptId}/submit?auto=1`,
+              new Blob([jsonBody], { type: "application/json" })
+            );
+          });
           return;
         }
-        navigator.sendBeacon(`/api/attempts/${props.attemptId}/submit?auto=1`, body);
+
+        // For regular tests: first save answers with fetch+keepalive, then submit with beacon
+        fetch(`/api/attempts/${props.attemptId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: jsonBody,
+          keepalive: true,
+        }).catch(() => {
+          // Silently fail on save, still attempt submit
+        }).finally(() => {
+          navigator.sendBeacon(
+            `/api/attempts/${props.attemptId}/submit?auto=1`,
+            new Blob([jsonBody], { type: "application/json" })
+          );
+        });
       }
     };
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
