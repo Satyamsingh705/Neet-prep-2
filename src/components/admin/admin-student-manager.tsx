@@ -50,7 +50,7 @@ export function AdminStudentManager({ students }: AdminStudentManagerProps) {
         throw new Error(payload.error ?? "Failed to create student.");
       }
 
-      setMessage(`Created student: ${payload.student.username}`);
+      setMessage(`Created student: ${payload.student?.username ?? username}`);
       setUsername("");
       setPassword("");
       setDisplayName("");

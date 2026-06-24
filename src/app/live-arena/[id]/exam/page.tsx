@@ -32,7 +32,7 @@ export default async function LiveExamPage({ params }: { params: Promise<{ id: s
 
   const test = {
     id: liveTest.id,
-    testCode: liveTest.code ?? null,
+    testCode: liveTest.testTemplate?.testCode ?? null,
     name: liveTest.title,
     durationMinutes,
     totalQuestions: questions.length,

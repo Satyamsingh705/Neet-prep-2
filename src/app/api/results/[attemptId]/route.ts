@@ -18,11 +18,11 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Attempt not found or already deleted." }, { status: 404 });
     }
 
-    revalidateTag("attempts");
+    revalidateTag("attempts", "max");
     try {
       const { revalidateTag } = await import("next/cache");
       try {
-        revalidateTag("tests");
+        revalidateTag("tests", "max");
       } catch {}
     } catch {}
     try {

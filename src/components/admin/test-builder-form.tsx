@@ -138,7 +138,7 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
         throw new Error(payload.error ?? "Test creation failed.");
       }
 
-      setMessage(`Created test: ${payload.test.name}`);
+      setMessage(`Created test: ${payload.test?.name ?? name}`);
   broadcastTestsChanged();
       router.refresh();
     } catch (error) {
@@ -368,7 +368,7 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
         throw new Error(payload.error ?? "Failed to create test from upload.");
       }
 
-      setUploadMessage(payload.message ?? `Created test: ${payload.test.name}`);
+      setUploadMessage(payload.message ?? `Created test: ${payload.test?.name ?? uploadName}`);
       setJsonFile(null);
       setZipFile(null);
       setPdfFile(null);
