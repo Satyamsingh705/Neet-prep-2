@@ -2,10 +2,12 @@
 node_modules
 .DS_Store
 *.log
-.env
-.env.local
 coverage
 dist
 prisma/dev.db
 prisma/dev.db-journal
 public/uploads
+# Local environment files
+.env
+.env.local
+.env.*.local
