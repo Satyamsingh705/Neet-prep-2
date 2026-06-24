@@ -268,7 +268,6 @@ export const getTestsForListing = (studentId?: string, options?: { includeUnpubl
                 config: true,
                 _count: { select: { attempts: true } },
                 testQuestions: {
-                  distinct: ["subject", "chapter"],
                   select: {
                     subject: true,
                     chapter: true,
