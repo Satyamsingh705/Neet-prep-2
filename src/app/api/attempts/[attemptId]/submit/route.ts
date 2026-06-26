@@ -55,8 +55,8 @@ async function handleSubmit(request: Request, params: Promise<{ attemptId: strin
     await submitAttempt(attemptId, autoSubmitted, student.id);
 
     // Invalidate cached results so the results page shows this submission immediately
-    revalidateTag("attempts");
-    revalidateTag("tests");
+    revalidateTag("attempts", undefined as any);
+    revalidateTag("tests", undefined as any);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

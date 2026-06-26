@@ -50,14 +50,14 @@ export async function PATCH(
     });
 
     // Revalidate caches so results and tests reflect the updated answers
-    revalidateTag("tests");
-    revalidateTag("attempts");
+    revalidateTag("tests", undefined as any);
+    revalidateTag("attempts", undefined as any);
 
     return NextResponse.json({ ok: true, question });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors.map((e) => e.message).join(", ") },
+        { error: error.issues.map((e) => e.message).join(", ") },
         { status: 400 }
       );
     }

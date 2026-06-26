@@ -28,7 +28,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ te
     });
 
     // Revalidate the tests cache so students and admin see the updated published state immediately
-    revalidateTag("tests");
+    revalidateTag("tests", undefined as any);
 
     return NextResponse.json({ ok: true, test });
   } catch (error) {
@@ -76,9 +76,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       // Trigger Next.js cache revalidation for pages/tags depending on tests
       const { revalidateTag } = await import("next/cache");
       try {
-        revalidateTag("tests");
-        revalidateTag("live-tests");
-        revalidateTag("attempts");
+        revalidateTag("tests", undefined as any);
+        revalidateTag("live-tests", undefined as any);
+        revalidateTag("attempts", undefined as any);
       } catch (err) {
         // ignore revalidation errors
         console.error("revalidateTag failed:", err);

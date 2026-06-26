@@ -106,8 +106,8 @@ export async function POST(request: Request) {
       });
 
       // Revalidate cached test listings and attempts
-      revalidateTag("tests");
-      revalidateTag("attempts");
+      revalidateTag("tests", undefined as any);
+      revalidateTag("attempts", undefined as any);
 
       return NextResponse.json({
         message: `Created test ${test.name} with ${createdQuestions.length} uploaded questions.`,
