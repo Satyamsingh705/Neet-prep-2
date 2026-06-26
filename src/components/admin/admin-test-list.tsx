@@ -132,7 +132,7 @@ export function AdminTestList({ tests }: AdminTestListProps) {
   return (
     <section className="panel rounded-[1.4rem] p-6">
       <h2 className="text-2xl font-semibold text-[#2f241c]">Available Tests</h2>
-      <div className="mt-5 space-y-4">
+      <div className="mt-5 max-h-[600px] space-y-4 overflow-y-auto">
         {tests.map((test) => (
           <div key={test.id} className="rounded-[1rem] border border-[#eadbcd] bg-[#fffdfa] p-4">
             <div className="flex items-start justify-between gap-4">

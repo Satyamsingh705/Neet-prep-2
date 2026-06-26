@@ -85,9 +85,9 @@ export function AdminResultsManager({ attempts }: AdminResultsManagerProps) {
         />
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-[1rem] border border-[#e6d9cb]">
+      <div className="mt-5 max-h-[520px] overflow-y-auto rounded-[1rem] border border-[#e6d9cb]">
         <table className="min-w-full border-collapse text-left text-sm">
-          <thead className="bg-[#f7efe6] text-[#7a5f4c]">
+          <thead className="sticky top-0 z-10 bg-[#f7efe6] text-[#7a5f4c]">
             <tr>
               <th className="px-4 py-3 font-semibold">Student</th>
               <th className="px-4 py-3 font-semibold">Test</th>

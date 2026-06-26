@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
+import { AdminDownloadJson } from "@/components/admin/admin-download-json";
 import { getCurrentAdmin } from "@/lib/admin-auth";
 import { getDashboardData } from "@/lib/data";
 import { formatDateTime } from "@/lib/format-date-time";
@@ -36,6 +37,8 @@ export default async function AdminDashboardPage() {
           <Link href="/admin/live-tests" className="btn-secondary">Live Competitive Tests</Link>
           <Link href="/admin/results" className="btn-secondary">View Submitted Results</Link>
           <Link href="/admin/students" className="btn-secondary">Manage Student Access</Link>
+          <a href="#download-json" className="btn-secondary">Download JSON</a>
+          <Link href="/admin/modify-answers" className="btn-secondary">Modify Answers</Link>
         </div>
       </section>
       <section className="grid gap-4 md:grid-cols-2">
@@ -53,7 +56,7 @@ export default async function AdminDashboardPage() {
           <h2 className="text-2xl font-semibold text-[#2f241c]">Tests</h2>
           <Link href="/admin/tests" className="text-sm font-semibold text-[#d7671b]">Open builder</Link>
         </div>
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid max-h-[540px] gap-4 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
           {dashboard.tests.map((test) => (
             <div key={test.id} className="rounded-[1rem] border border-[#e4d7c7] bg-[#fffdfa] p-5">
               <div className="flex items-center justify-between gap-4">
@@ -70,14 +73,20 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
+      <div id="download-json" className="lg:col-span-2">
+        <AdminDownloadJson tests={dashboard.tests} />
+      </div>
+
+
+
       <section className="panel rounded-[1.4rem] p-6 lg:col-span-2">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold text-[#2f241c]">Recent Submitted Attempts</h2>
           <Link href="/admin/results" className="text-sm font-semibold text-[#d7671b]">Open all results</Link>
         </div>
-        <div className="mt-5 overflow-hidden rounded-[1rem] border border-[#e6d9cb]">
+        <div className="mt-5 max-h-[520px] overflow-y-auto rounded-[1rem] border border-[#e6d9cb]">
           <table className="min-w-full border-collapse text-left text-sm">
-            <thead className="bg-[#f7efe6] text-[#7a5f4c]">
+            <thead className="sticky top-0 z-10 bg-[#f7efe6] text-[#7a5f4c]">
               <tr>
                 <th className="px-4 py-3 font-semibold">Student</th>
                 <th className="px-4 py-3 font-semibold">Test</th>

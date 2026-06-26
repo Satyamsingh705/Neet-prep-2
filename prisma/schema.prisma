@@ -110,6 +110,9 @@ model Attempt {
   @@index([studentId])
   @@index([status])
   @@index([submittedAt])
+  @@index([studentId, status])      // results page: WHERE studentId=X AND status IN (...)
+  @@index([status, submittedAt])    // results listing sorted by submittedAt
+  @@index([studentId, testId])      // attempt count grouped by testId for a student
 }
 
 model LiveTest {
@@ -131,6 +134,7 @@ model LiveTest {
 
   @@index([startTime])
   @@index([status])
+  @@index([visibility, status])     // live arena: WHERE visibility=PUBLIC AND status != CANCELLED
 }
 
 model BattleRegistration {
@@ -173,6 +177,8 @@ model LiveTestAttempt {
   @@index([liveTestId])
   @@index([studentId])
   @@index([score, timeConsumedSeconds, submittedAt])
+  @@index([studentId, status])      // live results: WHERE studentId=X AND status IN (...)
+  @@index([liveTestId, status])     // leaderboard: WHERE liveTestId=X AND status IN (...)
 }
 
 enum LiveTestStatus {

@@ -107,7 +107,7 @@ export function AdminStudentManager({ students }: AdminStudentManagerProps) {
           <div className="rounded-full bg-[#f6e4d3] px-3 py-1 text-sm font-semibold text-[#b85f20]">{students.length} students</div>
         </div>
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 max-h-[600px] space-y-4 overflow-y-auto">
           {students.map((student) => (
             <div key={student.id} className="rounded-[1rem] border border-[#eadbcd] bg-[#fffdfa] p-4">
               <div className="flex items-start justify-between gap-4">

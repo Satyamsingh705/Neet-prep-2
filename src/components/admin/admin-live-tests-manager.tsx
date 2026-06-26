@@ -73,9 +73,9 @@ export function AdminLiveTestsManager({ tests }: AdminLiveTestsManagerProps) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-xl border border-[#e6d9cb]">
+      <div className="max-h-[520px] overflow-y-auto rounded-xl border border-[#e6d9cb]">
         <table className="min-w-full border-collapse text-left text-sm">
-          <thead className="bg-[#fcfbf8] text-[#8a6a52]">
+          <thead className="sticky top-0 z-10 bg-[#fcfbf8] text-[#8a6a52]">
             <tr>
               <th className="px-4 py-3 font-bold">Title</th>
               <th className="px-4 py-3 font-bold">Starts At</th>
