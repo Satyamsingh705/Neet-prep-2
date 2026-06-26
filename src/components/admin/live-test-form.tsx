@@ -84,8 +84,9 @@ export function LiveTestForm({ testTemplates }: { testTemplates: Array<{ id: str
             correctMarks: 4,
             incorrectMarks: -1,
             unansweredMarks: 0,
-            published: true,
+            published: false,
             assignedSection: "MAJOR_TEST",
+            isArenaTemplate: true,
             questions,
           };
 

@@ -31,8 +31,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     try {
       const { revalidateTag } = await import("next/cache");
       try {
-        revalidateTag("attempts", "max");
-        revalidateTag("tests", "max");
+        revalidateTag("attempts");
+        revalidateTag("tests");
       } catch (err) {
         // ignore
       }

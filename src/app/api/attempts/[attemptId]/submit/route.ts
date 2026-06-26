@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { persistAttempt, submitAttempt } from "@/lib/data";
 import { getCurrentStudentRecord } from "@/lib/student-auth";
@@ -52,6 +53,11 @@ async function handleSubmit(request: Request, params: Promise<{ attemptId: strin
     }
 
     await submitAttempt(attemptId, autoSubmitted, student.id);
+
+    // Invalidate cached results so the results page shows this submission immediately
+    revalidateTag("attempts");
+    revalidateTag("tests");
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (isAttemptNotFoundError(error)) {

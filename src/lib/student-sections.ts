@@ -22,6 +22,27 @@ function getStoredAssignedSection(test: ListedTest) {
   return typeof assignedSection === "string" ? normalizeSubjectCategory(assignedSection) : null;
 }
 
+function isArenaTemplate(test: ListedTest) {
+  if (!test.config || typeof test.config !== "object" || Array.isArray(test.config)) {
+    return false;
+  }
+
+  const config = test.config as { isArenaTemplate?: unknown };
+
+  if (config.isArenaTemplate === true) {
+    return true;
+  }
+
+  // Also check if this test is used as a LiveTest template
+  // The _count.liveTests field is populated by getTestsForListing
+  const testWithLiveCount = test as ListedTest & { _count?: { liveTests?: number } };
+  if (testWithLiveCount._count?.liveTests && testWithLiveCount._count.liveTests > 0) {
+    return true;
+  }
+
+  return false;
+}
+
 function getAssignedSection(test: ListedTest) {
   if (test.mode === "NEET_PATTERN") {
     return "MAJOR_TEST";
@@ -78,8 +99,11 @@ export function getSectionChapters(test: ListedTest, category: AdminSubjectCateg
 export function getSectionTests(tests: ListedTest[], category: AdminSubjectCategory) {
   return tests
     .filter((test) => {
-      // Exclude any tests that might be used as arena templates
-      // Arena tests should ONLY appear in the live-arena section, not in subject sections
+      // Exclude arena templates — they should ONLY appear in /live-arena
+      if (isArenaTemplate(test)) {
+        return false;
+      }
+
       const assignedSection = getAssignedSection(test);
 
       return assignedSection ? assignedSection === category : true;
@@ -92,13 +116,13 @@ export function getSectionTests(tests: ListedTest[], category: AdminSubjectCateg
 }
 
 export function getMajorTests(tests: ListedTest[]) {
-  // Major tests should ONLY be published tests with NEET_PATTERN mode
-  // These are regular exam templates, NOT arena/competitive tests
-  // Arena tests are managed separately in the LiveTest table and shown at /live-arena only
+  // Major tests should ONLY be published tests with NEET_PATTERN mode or explicitly assigned MAJOR_TEST
+  // Arena templates are excluded — they belong ONLY in /live-arena
   return tests
     .filter(
       (test) =>
         test.published && // Only published tests
+        !isArenaTemplate(test) && // Never include arena templates
         (test.mode === "NEET_PATTERN"
         || getAssignedSection(test) === "MAJOR_TEST"
         || test.testQuestions.some((question) => isSubjectInCategory(question.subject, "MAJOR_TEST"))),

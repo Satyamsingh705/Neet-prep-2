@@ -21,6 +21,7 @@ type UploadedTestPayload = {
   unansweredMarks: number;
   published?: boolean;
   assignedSection?: AdminSubjectCategory;
+  isArenaTemplate?: boolean;
 };
 
 function shuffle<T>(items: T[]) {
@@ -145,6 +146,7 @@ export async function createTestFromUploadedQuestions(prisma: DbClient, payload:
       config: {
         source: "UPLOAD",
         assignedSection: payload.assignedSection,
+        isArenaTemplate: payload.isArenaTemplate ?? false,
         questionIds: questions.map((question) => question.id),
       },
       testQuestions: {

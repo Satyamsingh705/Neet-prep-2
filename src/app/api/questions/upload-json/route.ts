@@ -61,8 +61,8 @@ export async function POST(request: Request) {
       });
 
       // Revalidate cached question bank summary and test listings
-      revalidateTag("questions", "max");
-      revalidateTag("tests", "max");
+      revalidateTag("questions");
+      revalidateTag("tests");
 
       return NextResponse.json({ message: `Uploaded ${questionsInput.length} text questions.` });
     } catch (innerError) {

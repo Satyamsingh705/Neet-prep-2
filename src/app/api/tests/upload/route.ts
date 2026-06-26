@@ -37,6 +37,7 @@ const metaSchema = z.object({
   published: z.boolean().optional(),
   assignedSection: z.enum(adminSubjectValues),
   pdfAnswerKey: z.string().optional(),
+  isArenaTemplate: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
         published: body.published,
         assignedSection: body.assignedSection,
         pdfAnswerKey: body.pdfAnswerKey || undefined,
+        isArenaTemplate: body.isArenaTemplate || false,
       });
 
       const questionsInput = z.array(questionSchema).parse(body.questions);
@@ -104,8 +106,8 @@ export async function POST(request: Request) {
       });
 
       // Revalidate cached test listings and attempts
-      revalidateTag("tests", "max");
-      revalidateTag("attempts", "max");
+      revalidateTag("tests");
+      revalidateTag("attempts");
 
       return NextResponse.json({
         message: `Created test ${test.name} with ${createdQuestions.length} uploaded questions.`,

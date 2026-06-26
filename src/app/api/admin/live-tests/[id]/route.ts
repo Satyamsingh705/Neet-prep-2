@@ -37,8 +37,8 @@ export async function DELETE(
     });
 
     // Revalidate all cached data so students see the deletion immediately
-    revalidateTag("live-tests", "max");
-    revalidateTag("live-arena", "max");
+    revalidateTag("live-tests");
+    revalidateTag("live-arena");
 
     // Notify other server instances / clients about this change
     try {

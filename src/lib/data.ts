@@ -266,7 +266,7 @@ export const getTestsForListing = (studentId?: string, options?: { includeUnpubl
                 testCode: true,
                 published: true,
                 config: true,
-                _count: { select: { attempts: true } },
+                _count: { select: { attempts: true, liveTests: true } },
                 testQuestions: {
                   select: {
                     subject: true,
@@ -1170,93 +1170,87 @@ export async function getStudentAttemptResult(attemptId: string, studentId: stri
   });
 }
 
-export const getSubmittedAttemptResults = (studentId?: string) => {
-  return unstable_cache(
-    async () => {
-      return withTiming("getSubmittedAttemptResults", async () => {
-        try {
-          const [attempts, liveAttempts] = await Promise.all([
-            prisma.attempt.findMany({
-              where: {
-                status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
-                result: { not: Prisma.JsonNull },
-                ...(studentId ? { studentId } : {}),
-              },
+export async function getSubmittedAttemptResults(studentId?: string) {
+  return withTiming("getSubmittedAttemptResults", async () => {
+    try {
+      const [attempts, liveAttempts] = await Promise.all([
+        prisma.attempt.findMany({
+          where: {
+            status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
+            result: { not: Prisma.JsonNull },
+            ...(studentId ? { studentId } : {}),
+          },
+          select: {
+            id: true,
+            studentName: true,
+            status: true,
+            submittedAt: true,
+            result: true,
+            test: {
               select: {
                 id: true,
-                studentName: true,
-                status: true,
-                submittedAt: true,
-                result: true,
-                test: {
+                name: true,
+                testCode: true,
+              },
+            },
+          },
+          orderBy: { submittedAt: "desc" },
+        }),
+        prisma.liveTestAttempt.findMany({
+          where: {
+            status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
+            result: { not: Prisma.JsonNull },
+            ...(studentId ? { studentId } : {}),
+          },
+          select: {
+            id: true,
+            studentName: true,
+            status: true,
+            submittedAt: true,
+            result: true,
+            liveTest: {
+              select: {
+                id: true,
+                title: true,
+                testTemplate: {
                   select: {
-                    id: true,
-                    name: true,
                     testCode: true,
                   },
                 },
               },
-              orderBy: { submittedAt: "desc" },
-            }),
-            prisma.liveTestAttempt.findMany({
-              where: {
-                status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
-                result: { not: Prisma.JsonNull },
-                ...(studentId ? { studentId } : {}),
-              },
-              select: {
-                id: true,
-                studentName: true,
-                status: true,
-                submittedAt: true,
-                result: true,
-                liveTest: {
-                  select: {
-                    id: true,
-                    title: true,
-                    testTemplate: {
-                      select: {
-                        testCode: true,
-                      },
-                    },
-                  },
-                },
-              },
-              orderBy: { submittedAt: "desc" },
-            }),
-          ]);
-
-          const normalizedLiveAttempts = liveAttempts.map((la) => ({
-            id: la.id,
-            studentName: la.studentName,
-            status: la.status,
-            submittedAt: la.submittedAt,
-            result: la.result,
-            test: {
-              id: la.liveTest.id,
-              name: la.liveTest.title,
-              testCode: la.liveTest.testTemplate.testCode,
             },
-          }));
+          },
+          orderBy: { submittedAt: "desc" },
+        }),
+      ]);
 
-          return [...attempts, ...normalizedLiveAttempts].sort((a, b) => {
-            const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
-            const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
-            return dateB - dateA;
-          });
-        } catch (error) {
-          if (isDatabaseUnavailableError(error)) {
-            return [];
-          }
+      const normalizedLiveAttempts = liveAttempts.map((la) => ({
+        id: la.id,
+        studentName: la.studentName,
+        status: la.status,
+        submittedAt: la.submittedAt,
+        result: la.result,
+        test: {
+          id: la.liveTest.id,
+          name: la.liveTest.title,
+          testCode: la.liveTest.testTemplate.testCode,
+        },
+      }));
 
-          throw error;
-        }
+      return [...attempts, ...normalizedLiveAttempts].sort((a, b) => {
+        const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+        const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+        return dateB - dateA;
       });
-    },
-    [`submitted-results-${studentId ?? "all"}`],
-    { revalidate: 60, tags: ["attempts"] }
-  )();
-};
+    } catch (error) {
+      if (isDatabaseUnavailableError(error)) {
+        return [];
+      }
+
+      throw error;
+    }
+  });
+}
 
 // Dummy implementations for test series (pre-existing broken code)
 export async function getTestSeriesGroupsWithDocuments() {
