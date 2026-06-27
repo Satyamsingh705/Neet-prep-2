@@ -99,9 +99,9 @@ async function main() {
 
   await prisma.admin.create({
     data: {
-      username: "admin",
+      username: "705071",
       displayName: "Admin",
-      passwordHash: hashPassword("admin123"),
+      passwordHash: hashPassword("Sat@705071"),
     },
   });
 

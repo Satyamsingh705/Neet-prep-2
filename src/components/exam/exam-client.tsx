@@ -62,115 +62,115 @@ function blankAnswer() {
 }
 
 // Optimized Question Content component to prevent main client re-renders
-const QuestionBody = React.memo(({ 
-    question, 
-    answer, 
-    onSelectOption, 
-    onToggleOption, 
-    onClear,
-    totalQuestions 
-}: { 
-    question: QuestionPayload; 
-    answer: any; 
-    onSelectOption: (key: OptionKey) => void; 
-    onToggleOption: (key: OptionKey) => void;
-    onClear: () => void;
-    totalQuestions: number;
+const QuestionBody = React.memo(({
+  question,
+  answer,
+  onSelectOption,
+  onToggleOption,
+  onClear,
+  totalQuestions
+}: {
+  question: QuestionPayload;
+  answer: any;
+  onSelectOption: (key: OptionKey) => void;
+  onToggleOption: (key: OptionKey) => void;
+  onClear: () => void;
+  totalQuestions: number;
 }) => {
-    const isImageQuestion = question.type === "IMAGE";
-    const usesMultipleAnswers = question.answerPolicy === "MULTIPLE";
-    const prompt = getDisplayPrompt(question.prompt ?? "");
+  const isImageQuestion = question.type === "IMAGE";
+  const usesMultipleAnswers = question.answerPolicy === "MULTIPLE";
+  const prompt = getDisplayPrompt(question.prompt ?? "");
 
-    return (
-      <div className="w-full text-black">
-        {/* Question number displayed in header; removed duplicate here */}
+  return (
+    <div className="w-full text-black">
+      {/* Question number displayed in header; removed duplicate here */}
 
-        <div className="prose prose-sm max-w-none text-[1.125rem] leading-9 text-black">
-          {question.type === "TEXT" ? (
-            <QuestionContent
-              prompt={prompt}
-              table={question.table}
-              promptClassName="whitespace-pre-line text-[1.125rem] leading-9"
-              tableClassName="mt-6"
-            />
-          ) : (
-            <div className="mb-6 text-[1.125rem]">Image based question</div>
-          )}
-        </div>
-
-        {question.type === "IMAGE" && question.imagePath ? (
-          <div className="my-6 rounded-[0.9rem] border border-[#ddd0c3] bg-white p-4 shadow-sm">
-            <Image
-              src={question.imagePath}
-              alt={`Question ${question.orderIndex}`}
-              width={1200}
-              height={600}
-              className="mx-auto h-auto max-w-full rounded-[0.75rem]"
-              priority
-            />
-          </div>
-        ) : null}
-
-        <div className="mt-6 space-y-3.5">
-          {(question.options ?? fallbackOptions).map((option) => {
-            const isSelected = answer.selectedOptions.includes(option.key);
-            return (
-              <button
-                key={option.key}
-                type="button"
-                className={`flex w-full items-center gap-4 rounded-[0.45rem] border px-4 py-2.5 text-left text-[1.125rem] transition ${isSelected ? 'border-[#1f7a48] bg-[#daf4dc] text-[#17482e] shadow-sm' : 'border-[#d8cdc0] bg-white text-black hover:border-[#c8b8a6]'}`}
-                onClick={() => (usesMultipleAnswers ? onToggleOption(option.key) : onSelectOption(option.key))}
-              >
-                <div className={`flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 ${isSelected ? 'border-[#1f7a48] bg-[#1f7a48]' : 'border-[#b8ac9e] bg-white'}`}>
-                  {isSelected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
-                </div>
-                <div className="min-w-0 flex-1 text-black">{renderQuestionText(option.text)}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          className="mt-6 text-[0.98rem] font-normal text-black hover:text-gray-700 transition-colors"
-          onClick={onClear}
-        >
-          Clear Response
-        </button>
+      <div className="prose prose-sm max-w-none text-[1.125rem] leading-9 text-black">
+        {question.type === "TEXT" ? (
+          <QuestionContent
+            prompt={prompt}
+            table={question.table}
+            promptClassName="whitespace-pre-line text-[1.125rem] leading-9"
+            tableClassName="mt-6"
+          />
+        ) : (
+          <div className="mb-6 text-[1.125rem]">Image based question</div>
+        )}
       </div>
-    );
 
-  });
+      {question.type === "IMAGE" && question.imagePath ? (
+        <div className="my-6 rounded-[0.9rem] border border-[#ddd0c3] bg-white p-4 shadow-sm">
+          <Image
+            src={question.imagePath}
+            alt={`Question ${question.orderIndex}`}
+            width={1200}
+            height={600}
+            className="mx-auto h-auto max-w-full rounded-[0.75rem]"
+            priority
+          />
+        </div>
+      ) : null}
 
-  QuestionBody.displayName = "QuestionBody";
+      <div className="mt-6 space-y-3.5">
+        {(question.options ?? fallbackOptions).map((option) => {
+          const isSelected = answer.selectedOptions.includes(option.key);
+          return (
+            <button
+              key={option.key}
+              type="button"
+              className={`flex w-full items-center gap-4 rounded-[0.45rem] border px-4 py-2.5 text-left text-[1.125rem] transition ${isSelected ? 'border-[#1f7a48] bg-[#daf4dc] text-[#17482e] shadow-sm' : 'border-[#d8cdc0] bg-white text-black hover:border-[#c8b8a6]'}`}
+              onClick={() => (usesMultipleAnswers ? onToggleOption(option.key) : onSelectOption(option.key))}
+            >
+              <div className={`flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 ${isSelected ? 'border-[#1f7a48] bg-[#1f7a48]' : 'border-[#b8ac9e] bg-white'}`}>
+                {isSelected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
+              </div>
+              <div className="min-w-0 flex-1 text-black">{renderQuestionText(option.text)}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        className="mt-6 text-[0.98rem] font-normal text-sky-500 hover:text-yellow-400 transition-colors"
+        onClick={onClear}
+      >
+        Clear Response
+      </button>
+    </div>
+  );
+
+});
+
+QuestionBody.displayName = "QuestionBody";
 
 // Isolated Timer Component
 const ExamTimer = React.memo(({ initialSeconds, onExpire }: { initialSeconds: number; onExpire: () => void }) => {
-    const [seconds, setSeconds] = useState(initialSeconds);
-    const onExpireRef = useRef(onExpire);
-    useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
+  const [seconds, setSeconds] = useState(initialSeconds);
+  const onExpireRef = useRef(onExpire);
+  useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setSeconds(prev => {
-                const next = Math.max(0, prev - 1);
-                if (next === 0) {
-                    clearInterval(interval);
-                    onExpireRef.current();
-                }
-                return next;
-            });
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSeconds(prev => {
+        const next = Math.max(0, prev - 1);
+        if (next === 0) {
+          clearInterval(interval);
+          onExpireRef.current();
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-    const isLowTime = seconds > 0 && seconds <= 300;
+  const isLowTime = seconds > 0 && seconds <= 300;
 
-    return (
-        <span className={isLowTime ? "text-red-600" : ""}>
-            {formatTimer(seconds)}
-        </span>
-    );
+  return (
+    <span className={isLowTime ? "text-red-600" : ""}>
+      {formatTimer(seconds)}
+    </span>
+  );
 });
 
 ExamTimer.displayName = "ExamTimer";
@@ -183,26 +183,26 @@ export function ExamClient(props: ExamClientProps) {
       Object.entries(props.initialAnswers ?? {}).map(([qId, ans]) => [qId, normalizeStoredAnswer(ans as any)])
     )
   );
-  
+
   const [tabSwitchCount, setTabSwitchCount] = useState(props.initialTabSwitchCount);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [tabWarning, setTabWarning] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const submittedRef = useRef(false);
   const dirtySaveRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const pendingSaveRef = useRef(false);
   const totalTimeSpentSecondsRef = useRef(props.initialTotalTimeSpentSeconds);
   const questionTimeSpentRef = useRef<Record<string, number>>({});
-  
+
   const questions = props.questions;
   const currentQuestion = questions[currentQuestionIndex - 1];
   const questionPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (currentQuestion && !questionTimeSpentRef.current[currentQuestion.id]) {
-        questionTimeSpentRef.current[currentQuestion.id] = answers[currentQuestion.id]?.timeSpentSeconds ?? 0;
+      questionTimeSpentRef.current[currentQuestion.id] = answers[currentQuestion.id]?.timeSpentSeconds ?? 0;
     }
   }, [currentQuestion, answers]);
 
@@ -213,11 +213,11 @@ export function ExamClient(props: ExamClientProps) {
   // Silent background tracker
   useEffect(() => {
     const interval = setInterval(() => {
-        totalTimeSpentSecondsRef.current += 1;
-        if (currentQuestion) {
-            questionTimeSpentRef.current[currentQuestion.id] = (questionTimeSpentRef.current[currentQuestion.id] ?? 0) + 1;
-            dirtySaveRef.current = true;
-        }
+      totalTimeSpentSecondsRef.current += 1;
+      if (currentQuestion) {
+        questionTimeSpentRef.current[currentQuestion.id] = (questionTimeSpentRef.current[currentQuestion.id] ?? 0) + 1;
+        dirtySaveRef.current = true;
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, [currentQuestion]);
@@ -225,7 +225,7 @@ export function ExamClient(props: ExamClientProps) {
   const getLatestState = useCallback(() => {
     const updatedAnswers = { ...answers };
     Object.entries(questionTimeSpentRef.current).forEach(([qId, s]) => {
-        if (updatedAnswers[qId]) updatedAnswers[qId] = { ...updatedAnswers[qId], timeSpentSeconds: s };
+      if (updatedAnswers[qId]) updatedAnswers[qId] = { ...updatedAnswers[qId], timeSpentSeconds: s };
     });
     return {
       answers: updatedAnswers,
@@ -244,21 +244,21 @@ export function ExamClient(props: ExamClientProps) {
 
     saveInFlightRef.current = true;
     try {
-        if (props.test.mode === "LIVE") {
-            const params = body as any;
-            await persistLiveAttemptAction({
-                attemptId: props.attemptId,
-                answers: params.answers ?? {},
-                timeConsumedSeconds: params.totalTimeSpentSeconds ?? 0,
-            });
-        } else {
-            const response = await fetch(`/api/attempts/${props.attemptId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
-            });
-            if (!response.ok) throw new Error("Save failed");
-        }
+      if (props.test.mode === "LIVE") {
+        const params = body as any;
+        await persistLiveAttemptAction({
+          attemptId: props.attemptId,
+          answers: params.answers ?? {},
+          timeConsumedSeconds: params.totalTimeSpentSeconds ?? 0,
+        });
+      } else {
+        const response = await fetch(`/api/attempts/${props.attemptId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!response.ok) throw new Error("Save failed");
+      }
     } catch (e) { console.error("Autosave error", e); }
     finally {
       saveInFlightRef.current = false;
@@ -431,9 +431,9 @@ export function ExamClient(props: ExamClientProps) {
   return (
     <div className="h-screen overflow-hidden bg-[#f4efe6] text-black">
       <div className="flex h-screen w-full flex-col">
-        <header className="grid grid-cols-[140px_1fr] overflow-hidden rounded-t-[0.5rem] border border-[#ddd0c3] bg-[#f7f2ea] shadow-[0_1px_6px_rgba(92,70,48,0.06)]">
-          <div className="flex items-center border-r border-[#ddd0c3] px-3 py-2">
-            <div className="text-lg font-semibold text-[#d07a31]">{props.studentName}</div>
+        <header className="grid grid-cols-[220px_1fr] md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] overflow-hidden rounded-t-[0.5rem] border border-[#ddd0c3] bg-[#f7f2ea] shadow-[0_1px_6px_rgba(92,70,48,0.06)]">
+          <div className="flex items-center justify-center border-r border-[#ddd0c3] px-3 py-2">
+            <div className="text-lg font-semibold text-[#d07a31] text-center uppercase w-full">{props.studentName}</div>
           </div>
           <div className="flex items-center justify-between gap-4 px-4 py-2">
             <div className="flex flex-wrap items-center gap-2 text-[#7a5f46]">
@@ -471,7 +471,7 @@ export function ExamClient(props: ExamClientProps) {
                   <h2 className="text-[1.05rem] font-bold text-[#d46f23]">Questions</h2>
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-                    <div className="grid grid-cols-5 gap-2.5 max-h-[72vh] overflow-y-auto">
+                  <div className="grid grid-cols-5 gap-2.5 max-h-[72vh] overflow-y-auto">
                     {questions.map((q) => {
                       const status = getPaletteStatus(answers[q.id] ?? blankAnswer());
                       const isCurrent = q.orderIndex === currentQuestionIndex;
@@ -567,49 +567,49 @@ export function ExamClient(props: ExamClientProps) {
           </div>
         ) : null}
 
-      {showSubmitDialog && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-          <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden border border-slate-200">
-            <div className="p-12">
-              <h2 className="text-4xl font-black text-slate-800 mb-4 uppercase tracking-tighter">Submit Examination?</h2>
-              <p className="text-slate-500 mb-10 text-xl font-medium leading-relaxed">Please review your final performance summary before submitting the test. This action is irreversible.</p>
-              
-              <div className="grid grid-cols-3 gap-6 mb-12">
-                <div className="bg-emerald-50 rounded-[24px] p-8 text-center border border-emerald-100 shadow-sm">
-                  <div className="text-5xl font-black text-emerald-600 mb-2">{counts.answered}</div>
-                  <div className="text-xs font-black uppercase text-emerald-500 tracking-widest">Answered</div>
+        {showSubmitDialog && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+            <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden border border-slate-200">
+              <div className="p-12">
+                <h2 className="text-4xl font-black text-slate-800 mb-4 uppercase tracking-tighter">Submit Examination?</h2>
+                <p className="text-slate-500 mb-10 text-xl font-medium leading-relaxed">Please review your final performance summary before submitting the test. This action is irreversible.</p>
+
+                <div className="grid grid-cols-3 gap-6 mb-12">
+                  <div className="bg-emerald-50 rounded-[24px] p-8 text-center border border-emerald-100 shadow-sm">
+                    <div className="text-5xl font-black text-emerald-600 mb-2">{counts.answered}</div>
+                    <div className="text-xs font-black uppercase text-emerald-500 tracking-widest">Answered</div>
+                  </div>
+                  <div className="bg-rose-50 rounded-[24px] p-8 text-center border border-rose-100 shadow-sm">
+                    <div className="text-5xl font-black text-rose-600 mb-2">{props.test.totalQuestions - counts.answered}</div>
+                    <div className="text-xs font-black uppercase text-rose-500 tracking-widest">Unanswered</div>
+                  </div>
+                  <div className="bg-amber-50 rounded-[24px] p-8 text-center border border-amber-100 shadow-sm">
+                    <div className="text-5xl font-black text-amber-600 mb-2">{counts.flagged}</div>
+                    <div className="text-xs font-black uppercase text-amber-500 tracking-widest">Marked</div>
+                  </div>
                 </div>
-                <div className="bg-rose-50 rounded-[24px] p-8 text-center border border-rose-100 shadow-sm">
-                  <div className="text-5xl font-black text-rose-600 mb-2">{props.test.totalQuestions - counts.answered}</div>
-                  <div className="text-xs font-black uppercase text-rose-500 tracking-widest">Unanswered</div>
+
+                <div className="flex gap-6 justify-end">
+                  <button
+                    type="button"
+                    className="modern-btn modern-btn-secondary px-10"
+                    onClick={() => setShowSubmitDialog(false)}
+                  >
+                    Return to Test
+                  </button>
+                  <button
+                    disabled={isSubmitting}
+                    type="button"
+                    className="modern-btn modern-btn-danger px-12"
+                    onClick={() => void submitAttempt(false)}
+                  >
+                    {isSubmitting ? "Finalizing..." : "Submit Now"}
+                  </button>
                 </div>
-                <div className="bg-amber-50 rounded-[24px] p-8 text-center border border-amber-100 shadow-sm">
-                  <div className="text-5xl font-black text-amber-600 mb-2">{counts.flagged}</div>
-                  <div className="text-xs font-black uppercase text-amber-500 tracking-widest">Marked</div>
-                </div>
-              </div>
-              
-              <div className="flex gap-6 justify-end">
-                <button 
-                  type="button" 
-                  className="modern-btn modern-btn-secondary px-10" 
-                  onClick={() => setShowSubmitDialog(false)}
-                >
-                  Return to Test
-                </button>
-                <button 
-                  disabled={isSubmitting} 
-                  type="button" 
-                  className="modern-btn modern-btn-danger px-12" 
-                  onClick={() => void submitAttempt(false)}
-                >
-                  {isSubmitting ? "Finalizing..." : "Submit Now"}
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );

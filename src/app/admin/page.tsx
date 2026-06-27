@@ -11,12 +11,11 @@ export default async function AdminDashboardPage() {
   if (!admin) {
     return (
       <main className="mx-auto flex max-w-[720px] flex-col gap-6 px-6 py-10">
-        <section className="panel rounded-[1.5rem] p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Admin Access</p>
-          <h1 className="mt-3 text-4xl font-semibold text-[#2f241c]">Sign in to manage tests, students, and results.</h1>
-          <p className="mt-4 text-lg leading-8 text-[#65584a]">Default admin credentials are pre-seeded for local use: admin ID admin and password admin123.</p>
+        <div className="rounded-[1rem] border border-[#ead9c9] bg-[#fffdfa] p-4 sm:p-6 lg:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#b56d3d]">Admin Access</p>
+          <h1 className="mt-2 text-3xl font-semibold text-[#2f241c] sm:text-4xl lg:text-5xl mb-6">Admin login required.</h1>
           <AdminLoginForm />
-        </section>
+        </div>
       </main>
     );
   }

@@ -51,7 +51,7 @@ export function StudentHeaderGreeting() {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-sm font-medium text-slate-700">
       <span className="w-2 h-2 rounded-full bg-emerald-500" />
-      Hi, {name}
+      Hi, {name} <span className="text-lg">👋</span>
     </div>
   );
 }
