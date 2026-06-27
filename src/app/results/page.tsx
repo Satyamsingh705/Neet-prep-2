@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getSubmittedAttemptResults } from "@/lib/data";
 import { formatDateTime } from "@/lib/format-date-time";
 import { requireCurrentStudent } from "@/lib/student-auth";
@@ -40,9 +41,9 @@ export default async function StudentResultsPage() {
                     <div>Status: {attempt.status}</div>
                     <div>Submitted: {attempt.submittedAt ? formatDateTime(attempt.submittedAt) : "-"}</div>
                   </div>
-                  <a href={`/results/${attempt.id}`} className="btn-primary mt-4 w-full text-sm">
+                  <Link href={`/results/${attempt.id}`} className="btn-primary mt-4 w-full text-sm">
                     View Analysis
-                  </a>
+                  </Link>
                 </div>
               );
             })
@@ -53,9 +54,9 @@ export default async function StudentResultsPage() {
           )}
         </div>
 
-        <div className="mt-5 hidden overflow-hidden rounded-[1rem] border border-[#e6d9cb] md:block">
+        <div className="mt-5 hidden max-h-[600px] overflow-y-auto rounded-[1rem] border border-[#e6d9cb] md:block">
           <table className="min-w-full border-collapse text-left text-sm">
-            <thead className="bg-[#f7efe6] text-[#7a5f4c]">
+            <thead className="sticky top-0 z-10 bg-[#f7efe6] text-[#7a5f4c]">
               <tr>
                 <th className="px-4 py-3 font-semibold">Student</th>
                 <th className="px-4 py-3 font-semibold">Test</th>
@@ -80,9 +81,9 @@ export default async function StudentResultsPage() {
                     <td className="px-4 py-3 text-[#65584a]">{result?.score ?? "-"}</td>
                     <td className="px-4 py-3 text-[#65584a]">{attempt.submittedAt ? formatDateTime(attempt.submittedAt) : "-"}</td>
                     <td className="px-4 py-3">
-                      <a href={`/results/${attempt.id}`} className="btn-primary inline-flex px-3 py-2 text-xs">
+                      <Link href={`/results/${attempt.id}`} className="btn-primary inline-flex px-3 py-2 text-xs">
                         View Analysis
-                      </a>
+                      </Link>
                     </td>
                   </tr>
                 );

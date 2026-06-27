@@ -174,7 +174,9 @@ export function LiveArenaClient({
             .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())[0];
     }, [tests, now]);
 
+    const liveCount = useMemo(() => tests.filter(t => now >= t.startTime && now <= t.endTime).length, [tests, now]);
     const upcomingCount = useMemo(() => tests.filter(t => now < t.startTime).length, [tests, now]);
+    const completedCount = useMemo(() => tests.filter(t => t.endTime < now).length, [tests, now]);
     const totalRegistered = useMemo(() => tests.reduce((acc, t) => acc + t.registeredCount, 0), [tests]);
 
     return (
@@ -198,6 +200,8 @@ export function LiveArenaClient({
                     </div>
                 </div>
             </section>
+
+
 
             {/* MAIN CONTENT AREA */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -232,7 +236,7 @@ export function LiveArenaClient({
 
                 {/* SIDEBAR */}
                 <div className="lg:col-span-4 space-y-10">
-                    {/* NEXT BATTLE CARD - ULTRA PREMIUM */}
+                    {/* NEXT BATTLE COUNTDOWN CARD */}
                     {nextBattle && (
                         <div className="relative group overflow-hidden bg-[#09090b] rounded-[40px] p-10 text-white shadow-2xl shadow-indigo-500/10 border border-white/5">
                             <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/30 rounded-full blur-[100px] pointer-events-none group-hover:bg-indigo-600/40 transition-all duration-700" />
@@ -253,9 +257,17 @@ export function LiveArenaClient({
                                     <div className="w-1 h-1 rounded-full bg-zinc-700 mt-[-12px]" />
                                     <TimeBlock value={getRemainingTime(nextBattle.startTime, now).s} label="Secs" />
                                 </div>
+
+                                <div className="flex flex-wrap justify-center gap-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.15em]">
+                                    <span className="flex items-center gap-1.5"><DocIcon /> {nextBattle.testTemplate.totalQuestions} Qs</span>
+                                    <span className="flex items-center gap-1.5"><TimerIconSmall /> {nextBattle.durationMinutes} Min</span>
+                                    <span className="flex items-center gap-1.5"><UsersIcon /> {nextBattle.registeredCount} Joined</span>
+                                </div>
                             </div>
                         </div>
                     )}
+
+
 
                 </div>
             </div>
@@ -288,6 +300,16 @@ function EmptyStateFeed({ onRefresh }: { onRefresh: () => void }) {
             <h5 className="text-2xl font-black text-zinc-900 tracking-tight">No Active Battles</h5>
             <p className="mt-2 text-zinc-500 text-base max-w-sm font-medium">The arena is currently quiet. Check back soon for upcoming challenges.</p>
             <button onClick={onRefresh} className="mt-10 h-14 px-12 rounded-[24px] bg-zinc-900 text-white text-[11px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-900/20">Check For Updates</button>
+        </div>
+    );
+}
+
+function ArenaStatCard({ label, value, icon, color }: { label: string; value: number; icon: string; color: string }) {
+    return (
+        <div className="flex flex-col items-center justify-center rounded-[24px] bg-white border border-zinc-200/60 p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all">
+            <span className={`text-3xl ${color}`}>{icon}</span>
+            <span className="mt-3 text-2xl font-black text-zinc-900 tabular-nums">{value}</span>
+            <span className="mt-1 text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400">{label}</span>
         </div>
     );
 }

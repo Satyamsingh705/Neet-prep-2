@@ -29,18 +29,10 @@ function isArenaTemplate(test: ListedTest) {
 
   const config = test.config as { isArenaTemplate?: unknown };
 
-  if (config.isArenaTemplate === true) {
-    return true;
-  }
-
-  // Also check if this test is used as a LiveTest template
-  // The _count.liveTests field is populated by getTestsForListing
-  const testWithLiveCount = test as ListedTest & { _count?: { liveTests?: number } };
-  if (testWithLiveCount._count?.liveTests && testWithLiveCount._count.liveTests > 0) {
-    return true;
-  }
-
-  return false;
+  // Only use the explicit config flag set during test creation.
+  // Do NOT use _count.liveTests — a regular test may be referenced by a LiveTest
+  // without being an arena template, and that should not hide it from student sections.
+  return config.isArenaTemplate === true;
 }
 
 function getAssignedSection(test: ListedTest) {
@@ -108,11 +100,21 @@ export function getSectionTests(tests: ListedTest[], category: AdminSubjectCateg
 
       return assignedSection ? assignedSection === category : true;
     })
-    .map((test) => ({
-      ...test,
-      sectionChapters: getSectionChapters(test, category),
-    }))
-    .filter((test) => test.sectionChapters.length > 0);
+    .map((test) => {
+      const storedSection = getStoredAssignedSection(test);
+      const sectionChapters = getSectionChapters(test, category);
+
+      return {
+        ...test,
+        sectionChapters,
+        // If admin explicitly assigned this test to this category, always include it
+        // even if no chapters match the subject filter (e.g. uploaded tests with
+        // a different subject on the questions than the assigned section).
+        _explicitlyAssigned: storedSection === category,
+      };
+    })
+    .filter((test) => test._explicitlyAssigned || test.sectionChapters.length > 0)
+    .map(({ _explicitlyAssigned, ...test }) => test);
 }
 
 export function getMajorTests(tests: ListedTest[]) {
@@ -127,17 +129,24 @@ export function getMajorTests(tests: ListedTest[]) {
         || getAssignedSection(test) === "MAJOR_TEST"
         || test.testQuestions.some((question) => isSubjectInCategory(question.subject, "MAJOR_TEST"))),
     )
-    .map((test) => ({
-      ...test,
-      sectionChapters: Array.from(
-        new Set(
-          (test.mode === "NEET_PATTERN"
-            ? test.testQuestions
-            : test.testQuestions.filter((question) => isSubjectInCategory(question.subject, "MAJOR_TEST")))
-            .map((question) => question.chapter),
-        ),
-      ),
-    }));
+    .map((test) => {
+      const isNeetOrExplicitMajor =
+        test.mode === "NEET_PATTERN"
+        || getStoredAssignedSection(test) === "MAJOR_TEST";
+
+      // For NEET pattern tests or explicitly assigned major tests,
+      // include ALL chapters so the test always appears.
+      const chapters = isNeetOrExplicitMajor
+        ? test.testQuestions.map((question) => question.chapter)
+        : test.testQuestions
+            .filter((question) => isSubjectInCategory(question.subject, "MAJOR_TEST"))
+            .map((question) => question.chapter);
+
+      return {
+        ...test,
+        sectionChapters: Array.from(new Set(chapters)),
+      };
+    });
 }
 
 export function getTestsBySection(tests: ListedTest[]) {

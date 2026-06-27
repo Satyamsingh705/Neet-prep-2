@@ -158,7 +158,7 @@ export const getStudentHomeSummary = unstable_cache(
     });
   },
   ["student-home-summary"],
-  { revalidate: 3600, tags: ["tests"] }
+  { revalidate: 60, tags: ["tests"] }
 );
 
 export const getQuestionBankSummary = unstable_cache(
@@ -193,7 +193,7 @@ export const getQuestionBankSummary = unstable_cache(
     });
   },
   ["question-bank-summary"],
-  { revalidate: 3600, tags: ["questions"] }
+  { revalidate: 60, tags: ["questions"] }
 );
 
 export async function getStudentsForAdmin() {
@@ -298,8 +298,8 @@ export const getTestsForListing = (studentId?: string, options?: { includeUnpubl
         }
       });
     },
-    [`tests-listing-${studentId ?? "public"}-${options?.includeUnpublished ?? "false"}`],
-    { revalidate: 300, tags: ["tests", "attempts"] }
+    [`tests-listing-${options?.includeUnpublished ?? "false"}`],
+    { revalidate: 30, tags: ["tests", "attempts"] }
   )();
 };
 
@@ -433,7 +433,7 @@ export const getInstructionData = (testId: string) => {
       });
     },
     [`test-instructions-${testId}`],
-    { revalidate: 3600, tags: ["tests"] }
+    { revalidate: 60, tags: ["tests"] }
   )();
 };
 
