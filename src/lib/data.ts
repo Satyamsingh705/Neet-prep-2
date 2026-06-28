@@ -228,21 +228,26 @@ export async function getStudentsForAdmin() {
 
 
 export async function getStudentAttemptCount(studentId: string) {
-  return withTiming("getStudentAttemptCount", async () => {
-    try {
-      return await prisma.attempt.count({
-        where: {
-          studentId,
-        },
-      });
-    } catch (error) {
-      if (isDatabaseUnavailableError(error)) {
-        return 0;
-      }
-
-      throw error;
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getStudentAttemptCount", async () => {
+          return await prisma.attempt.count({
+            where: {
+              studentId,
+            },
+          });
+        });
+      },
+      [`attempt-count-${studentId}`],
+      { revalidate: 30, tags: ["attempts"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return 0;
     }
-  });
+    throw error;
+  }
 }
 
 export async function getTestsForListing(studentId?: string, options?: { includeUnpublished?: boolean }) {
