@@ -134,67 +134,69 @@ export async function getDashboardData() {
   });
 }
 
-export const getStudentHomeSummary = unstable_cache(
-  async () => {
-    return withTiming("getStudentHomeSummary", async () => {
-      try {
-        const summary = await prisma.test.aggregate({
-          where: {
-            published: true,
-          },
-          _sum: {
-            totalQuestions: true,
-          },
+export async function getStudentHomeSummary() {
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getStudentHomeSummary", async () => {
+          const summary = await prisma.test.aggregate({
+            where: {
+              published: true,
+            },
+            _sum: {
+              totalQuestions: true,
+            },
+          });
+
+          return { totalQuestions: summary._sum.totalQuestions ?? 0 };
         });
+      },
+      ["student-home-summary"],
+      { revalidate: 60, tags: ["tests"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return { totalQuestions: 0 };
+    }
+    throw error;
+  }
+}
 
-        return { totalQuestions: summary._sum.totalQuestions ?? 0 };
-      } catch (error) {
-        if (isDatabaseUnavailableError(error)) {
-          return { totalQuestions: 0 };
-        }
+export async function getQuestionBankSummary() {
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getQuestionBankSummary", async () => {
+          const [total, grouped, chapters] = await Promise.all([
+            prisma.question.count(),
+            prisma.question.groupBy({ by: ["subject", "type"], _count: { _all: true } }),
+            prisma.question.findMany({ select: { subject: true, chapter: true }, distinct: ["subject", "chapter"], orderBy: [{ subject: "asc" }, { chapter: "asc" }] }),
+          ]);
 
-        throw error;
-      }
-    });
-  },
-  ["student-home-summary"],
-  { revalidate: 60, tags: ["tests"] }
-);
+          const normalizedGrouped = grouped.map((group) => ({
+            subject: getSubjectLabel(group.subject),
+            type: group.type,
+            _count: group._count,
+          }));
 
-export const getQuestionBankSummary = unstable_cache(
-  async () => {
-    return withTiming("getQuestionBankSummary", async () => {
-      try {
-        const [total, grouped, chapters] = await Promise.all([
-          prisma.question.count(),
-          prisma.question.groupBy({ by: ["subject", "type"], _count: { _all: true } }),
-          prisma.question.findMany({ select: { subject: true, chapter: true }, distinct: ["subject", "chapter"], orderBy: [{ subject: "asc" }, { chapter: "asc" }] }),
-        ]);
+          const normalizedChapters = chapters.map((chapter) => ({
+            subject: getSubjectLabel(chapter.subject),
+            chapter: chapter.chapter,
+          }));
 
-        const normalizedGrouped = grouped.map((group) => ({
-          subject: getSubjectLabel(group.subject),
-          type: group.type,
-          _count: group._count,
-        }));
-
-        const normalizedChapters = chapters.map((chapter) => ({
-          subject: getSubjectLabel(chapter.subject),
-          chapter: chapter.chapter,
-        }));
-
-        return { total, grouped: normalizedGrouped, chapters: normalizedChapters };
-      } catch (error) {
-        if (isDatabaseUnavailableError(error)) {
-          return { total: 0, grouped: [], chapters: [] };
-        }
-
-        throw error;
-      }
-    });
-  },
-  ["question-bank-summary"],
-  { revalidate: 60, tags: ["questions"] }
-);
+          return { total, grouped: normalizedGrouped, chapters: normalizedChapters };
+        });
+      },
+      ["question-bank-summary"],
+      { revalidate: 60, tags: ["questions"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return { total: 0, grouped: [], chapters: [] };
+    }
+    throw error;
+  }
+}
 
 export async function getStudentsForAdmin() {
   try {
@@ -243,15 +245,15 @@ export async function getStudentAttemptCount(studentId: string) {
   });
 }
 
-export const getTestsForListing = (studentId?: string, options?: { includeUnpublished?: boolean }) => {
+export async function getTestsForListing(studentId?: string, options?: { includeUnpublished?: boolean }) {
   // IMPORTANT: This fetches ONLY regular tests from the Test table
   // These are for major tests and subject sections at /sections/*
   // Arena/Competitive tests are in LiveTest table and shown at /live-arena only
   // There should be NO overlap between these two - they are completely isolated
-  return unstable_cache(
-    async () => {
-      return withTiming("getTestsForListing", async () => {
-        try {
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getTestsForListing", async () => {
           const [tests, studentAttemptCounts] = await Promise.all([
             prisma.test.findMany({
               where: options?.includeUnpublished ? undefined : { published: true },
@@ -290,18 +292,18 @@ export const getTestsForListing = (studentId?: string, options?: { includeUnpubl
             ...test,
             studentAttemptCount: studentId ? (studentAttemptCountMap.get(test.id) ?? 0) : test._count.attempts,
           }));
-        } catch (error) {
-          if (isDatabaseUnavailableError(error)) {
-            return [];
-          }
-          throw error;
-        }
-      });
-    },
-    [`tests-listing-${options?.includeUnpublished ?? "false"}`],
-    { revalidate: 30, tags: ["tests", "attempts"] }
-  )();
-};
+        });
+      },
+      [`tests-listing-${studentId ?? "anon"}-${options?.includeUnpublished ?? "false"}`],
+      { revalidate: 30, tags: ["tests", "attempts"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return [];
+    }
+    throw error;
+  }
+}
 
 export async function getStudentAnalytics(studentId: string) {
   return withTiming("getStudentAnalytics", async () => {
@@ -408,11 +410,11 @@ export async function getStudentAnalytics(studentId: string) {
   });
 }
 
-export const getInstructionData = (testId: string) => {
-  return unstable_cache(
-    async () => {
-      return withTiming("getInstructionData", async () => {
-        try {
+export async function getInstructionData(testId: string) {
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getInstructionData", async () => {
           return await prisma.test.findUnique({
             where: { id: testId },
             select: {
@@ -424,18 +426,18 @@ export const getInstructionData = (testId: string) => {
               incorrectMarks: true,
             },
           });
-        } catch (error) {
-          if (isDatabaseUnavailableError(error)) {
-            return null;
-          }
-          throw error;
-        }
-      });
-    },
-    [`test-instructions-${testId}`],
-    { revalidate: 60, tags: ["tests"] }
-  )();
-};
+        });
+      },
+      [`test-instructions-${testId}`],
+      { revalidate: 60, tags: ["tests"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return null;
+    }
+    throw error;
+  }
+}
 
 export async function startAttempt(testId: string, student?: { id: string; username: string; displayName: string | null }) {
   return withTiming("startAttempt", async () => {
@@ -485,10 +487,11 @@ export async function startAttempt(testId: string, student?: { id: string; usern
 
 export async function getAttemptData(attemptId: string, studentId?: string, includeCorrectAnswers = false) {
   return withTiming("getAttemptData", async () => {
-    let attempt;
+    // Step 1: Lightweight query for attempt state + test metadata (no question content)
+    let attemptMeta;
 
     try {
-      attempt = await prisma.attempt.findFirst({
+      attemptMeta = await prisma.attempt.findFirst({
         where: {
           id: attemptId,
           ...(studentId ? { studentId } : {}),
@@ -514,27 +517,6 @@ export async function getAttemptData(attemptId: string, studentId?: string, incl
               incorrectMarks: true,
               unansweredMarks: true,
               totalEvaluatedQuestions: true,
-              testQuestions: {
-                orderBy: { orderIndex: "asc" },
-                select: {
-                  section: true,
-                  orderIndex: true,
-                  question: {
-                    select: {
-                      id: true,
-                      subject: true,
-                      chapter: true,
-                      type: true,
-                       prompt: true, // Always include prompt for results display
-                       options: true, // Always include options for results display
-                       imagePath: true, // Always include imagePath for results display
-                      correctAnswers: includeCorrectAnswers,
-                      answerPolicy: true,
-                       metadata: true, // Always include metadata for results display
-                    },
-                  },
-                },
-              },
             },
           },
         },
@@ -546,13 +528,44 @@ export async function getAttemptData(attemptId: string, studentId?: string, incl
       throw error;
     }
 
-    if (!attempt) {
+    if (!attemptMeta) {
       return null;
     }
 
-    const questions = attempt.test.testQuestions.map(normalizeQuestion);
+    // Step 2: Fetch test questions — cached because question content is static for a given test
+    const testId = attemptMeta.test.id;
+    const testQuestions = await unstable_cache(
+      async () => {
+        return prisma.testQuestion.findMany({
+          where: { testId },
+          orderBy: { orderIndex: "asc" },
+          select: {
+            section: true,
+            orderIndex: true,
+            question: {
+              select: {
+                id: true,
+                subject: true,
+                chapter: true,
+                type: true,
+                prompt: true,
+                options: true,
+                imagePath: true,
+                correctAnswers: includeCorrectAnswers,
+                answerPolicy: true,
+                metadata: true,
+              },
+            },
+          },
+        });
+      },
+      [`test-questions-${testId}-${includeCorrectAnswers}`],
+      { revalidate: 300, tags: ["tests", "questions"] }
+    )();
+
+    const questions = testQuestions.map(normalizeQuestion);
     const answers = Object.fromEntries(
-      Object.entries((attempt.answers as StoredAnswersMap) ?? {}).map(([questionId, answer]) => [questionId, normalizeStoredAnswer(answer)]),
+      Object.entries((attemptMeta.answers as StoredAnswersMap) ?? {}).map(([questionId, answer]) => [questionId, normalizeStoredAnswer(answer)]),
     ) as StoredAnswersMap;
     const palette = questions.map((question) => ({
       id: question.id,
@@ -562,16 +575,19 @@ export async function getAttemptData(attemptId: string, studentId?: string, incl
 
     return {
       attempt: {
-        id: attempt.id,
-        status: attempt.status,
-        answers: attempt.answers,
-        currentQuestionIndex: attempt.currentQuestionIndex,
-        tabSwitchCount: attempt.tabSwitchCount,
-        totalTimeSpentSeconds: attempt.totalTimeSpentSeconds,
-        startedAt: attempt.startedAt,
-        result: attempt.result,
+        id: attemptMeta.id,
+        status: attemptMeta.status,
+        answers: attemptMeta.answers,
+        currentQuestionIndex: attemptMeta.currentQuestionIndex,
+        tabSwitchCount: attemptMeta.tabSwitchCount,
+        totalTimeSpentSeconds: attemptMeta.totalTimeSpentSeconds,
+        startedAt: attemptMeta.startedAt,
+        result: attemptMeta.result,
       },
-      test: attempt.test,
+      test: {
+        ...attemptMeta.test,
+        testQuestions,
+      },
       questions,
       answers,
       palette,
@@ -751,53 +767,59 @@ export async function getLiveArenaData(studentId?: string) {
   // IMPORTANT: Arena/Live Tests are ONLY fetched from LiveTest table
   // Regular tests (from Test table) should NEVER appear in the arena section
   // Arena section (/live-arena) is completely isolated from major/subject test sections
-  return withTiming("getLiveArenaData", async () => {
-    try {
-      const [liveTests, studentStats, registeredBattleIds] = await Promise.all([
-        prisma.liveTest.findMany({
-          where: {
-            visibility: "PUBLIC",
-            status: { not: "CANCELLED" },
-          },
-          orderBy: { startTime: "asc" },
-          include: {
-            _count: { select: { attempts: true } },
-            testTemplate: {
-              select: {
-                totalQuestions: true,
-                durationMinutes: true,
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getLiveArenaData", async () => {
+          const [liveTests, studentStats, registeredBattleIds] = await Promise.all([
+            prisma.liveTest.findMany({
+              where: {
+                visibility: "PUBLIC",
+                status: { not: "CANCELLED" },
               },
-            },
-          },
-        }),
-        studentId ? prisma.liveTestAttempt.aggregate({
-          where: { studentId, status: { in: ["SUBMITTED", "AUTO_SUBMITTED"] } },
-          _count: { _all: true },
-          _max: { score: true }
-        }) : null,
-        studentId ? prisma.battleRegistration.findMany({
-            where: { studentId },
-            select: { liveTestId: true },
-        }) : [],
-      ]);
+              orderBy: { startTime: "asc" },
+              include: {
+                _count: { select: { attempts: true } },
+                testTemplate: {
+                  select: {
+                    totalQuestions: true,
+                    durationMinutes: true,
+                  },
+                },
+              },
+            }),
+            studentId ? prisma.liveTestAttempt.aggregate({
+              where: { studentId, status: { in: ["SUBMITTED", "AUTO_SUBMITTED"] } },
+              _count: { _all: true },
+              _max: { score: true }
+            }) : null,
+            studentId ? prisma.battleRegistration.findMany({
+                where: { studentId },
+                select: { liveTestId: true },
+            }) : [],
+          ]);
 
-      const registeredSet = new Set(registeredBattleIds.map(r => r.liveTestId));
+          const registeredSet = new Set(registeredBattleIds.map(r => r.liveTestId));
 
-      return {
-        liveTests: liveTests.map(t => ({
-            ...t,
-            isRegistered: registeredSet.has(t.id)
-        })),
-        stats: {
-          battlesAttempted: studentStats?._count._all ?? 0,
-          bestScore: studentStats?._max.score ?? 0,
-        }
-      };
-    } catch (error) {
-      if (isDatabaseUnavailableError(error)) return { liveTests: [], stats: { battlesAttempted: 0, bestScore: 0 } };
-      throw error;
-    }
-  });
+          return {
+            liveTests: liveTests.map(t => ({
+                ...t,
+                isRegistered: registeredSet.has(t.id)
+            })),
+            stats: {
+              battlesAttempted: studentStats?._count._all ?? 0,
+              bestScore: studentStats?._max.score ?? 0,
+            }
+          };
+        });
+      },
+      [`live-arena-${studentId ?? "anon"}`],
+      { revalidate: 30, tags: ["live-arena", "live-tests"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) return { liveTests: [], stats: { battlesAttempted: 0, bestScore: 0 } };
+    throw error;
+  }
 }
 
 export async function getLiveTestData(liveTestId: string, studentId?: string) {
@@ -1170,86 +1192,139 @@ export async function getStudentAttemptResult(attemptId: string, studentId: stri
   });
 }
 
-export async function getSubmittedAttemptResults(studentId?: string) {
-  return withTiming("getSubmittedAttemptResults", async () => {
-    try {
-      const [attempts, liveAttempts] = await Promise.all([
-        prisma.attempt.findMany({
-          where: {
-            status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
-            result: { not: Prisma.JsonNull },
-            ...(studentId ? { studentId } : {}),
-          },
-          select: {
-            id: true,
-            studentName: true,
-            status: true,
-            submittedAt: true,
-            result: true,
-            test: {
-              select: {
-                id: true,
-                name: true,
-                testCode: true,
+export async function getSubmittedAttemptResults(studentId?: string, options?: { limit?: number; offset?: number }) {
+  // When limit is provided, we fetch (offset + limit) from each table to guarantee
+  // correct merged ordering, then slice. This is far cheaper than fetching everything.
+  const takeFromEach = options?.limit ? (options.offset ?? 0) + options.limit : undefined;
+
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getSubmittedAttemptResults", async () => {
+          const [attempts, liveAttempts] = await Promise.all([
+            prisma.attempt.findMany({
+              where: {
+                status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
+                result: { not: Prisma.JsonNull },
+                ...(studentId ? { studentId } : {}),
               },
-            },
-          },
-          orderBy: { submittedAt: "desc" },
-        }),
-        prisma.liveTestAttempt.findMany({
-          where: {
-            status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
-            result: { not: Prisma.JsonNull },
-            ...(studentId ? { studentId } : {}),
-          },
-          select: {
-            id: true,
-            studentName: true,
-            status: true,
-            submittedAt: true,
-            result: true,
-            liveTest: {
               select: {
                 id: true,
-                title: true,
-                testTemplate: {
+                studentName: true,
+                status: true,
+                submittedAt: true,
+                result: true,
+                test: {
                   select: {
+                    id: true,
+                    name: true,
                     testCode: true,
                   },
                 },
               },
+              orderBy: { submittedAt: "desc" },
+              ...(takeFromEach ? { take: takeFromEach } : {}),
+            }),
+            prisma.liveTestAttempt.findMany({
+              where: {
+                status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
+                result: { not: Prisma.JsonNull },
+                ...(studentId ? { studentId } : {}),
+              },
+              select: {
+                id: true,
+                studentName: true,
+                status: true,
+                submittedAt: true,
+                result: true,
+                liveTest: {
+                  select: {
+                    id: true,
+                    title: true,
+                    testTemplate: {
+                      select: {
+                        testCode: true,
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: { submittedAt: "desc" },
+              ...(takeFromEach ? { take: takeFromEach } : {}),
+            }),
+          ]);
+
+          const normalizedLiveAttempts = liveAttempts.map((la) => ({
+            id: la.id,
+            studentName: la.studentName,
+            status: la.status,
+            submittedAt: la.submittedAt,
+            result: la.result,
+            test: {
+              id: la.liveTest.id,
+              name: la.liveTest.title,
+              testCode: la.liveTest.testTemplate.testCode,
             },
-          },
-          orderBy: { submittedAt: "desc" },
-        }),
-      ]);
+          }));
 
-      const normalizedLiveAttempts = liveAttempts.map((la) => ({
-        id: la.id,
-        studentName: la.studentName,
-        status: la.status,
-        submittedAt: la.submittedAt,
-        result: la.result,
-        test: {
-          id: la.liveTest.id,
-          name: la.liveTest.title,
-          testCode: la.liveTest.testTemplate.testCode,
-        },
-      }));
+          const all = [...attempts, ...normalizedLiveAttempts].sort((a, b) => {
+            const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+            const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+            return dateB - dateA;
+          });
 
-      return [...attempts, ...normalizedLiveAttempts].sort((a, b) => {
-        const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
-        const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
-        return dateB - dateA;
-      });
-    } catch (error) {
-      if (isDatabaseUnavailableError(error)) {
-        return [];
-      }
+          if (options?.limit) {
+            const start = options.offset ?? 0;
+            return all.slice(start, start + options.limit);
+          }
 
-      throw error;
+          return all;
+        });
+      },
+      [`results-${studentId ?? "all"}-${options?.limit ?? "all"}-${options?.offset ?? 0}`],
+      { revalidate: 30, tags: ["attempts"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return [];
     }
-  });
+    throw error;
+  }
+}
+
+export async function getSubmittedAttemptResultsCount(studentId?: string) {
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getSubmittedAttemptResultsCount", async () => {
+          const [regularCount, liveCount] = await Promise.all([
+            prisma.attempt.count({
+              where: {
+                status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
+                result: { not: Prisma.JsonNull },
+                ...(studentId ? { studentId } : {}),
+              },
+            }),
+            prisma.liveTestAttempt.count({
+              where: {
+                status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
+                result: { not: Prisma.JsonNull },
+                ...(studentId ? { studentId } : {}),
+              },
+            }),
+          ]);
+          return regularCount + liveCount;
+        });
+      },
+      [`results-count-${studentId ?? "all"}`],
+      { revalidate: 30, tags: ["attempts"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return 0;
+    }
+    throw error;
+  }
 }
 
 // Dummy implementations for test series (pre-existing broken code)
