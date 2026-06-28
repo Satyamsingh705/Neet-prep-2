@@ -91,7 +91,7 @@ function getOptionClass(optionState: ReturnType<typeof getOptionState>) {
     case "selected":
       return "border border-amber-300 bg-amber-50 text-amber-800";
     default:
-      return "border border-zinc-200/60 bg-white text-zinc-600";
+      return "border border-zinc-200/60 bg-white text-zinc-900";
   }
 }
 
@@ -172,28 +172,28 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
         {/* Left: Test info */}
         <div className="flex flex-col gap-5 flex-1">
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-[13px] font-bold text-blue-600 border border-blue-100/50 tracking-wide">
+            <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-[13px] font-bold text-emerald-600 border border-emerald-100/50 tracking-wide">
               {attempt.status}
             </span>
           </div>
           <h1 className="text-[44px] font-bold tracking-tighter text-zinc-900 leading-tight">
             {test.name || "Unit Test Upload"}
           </h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 text-[14px] text-zinc-500 font-medium">
-            <div className="flex items-center gap-2 bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50">
-              <span className="text-zinc-400">ID</span>
-              <span className="text-zinc-700 font-semibold">{test.testCode ?? (test.id ? `TST-${test.id.slice(-8).toUpperCase()}` : "-")}</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 text-[14px] text-zinc-900 font-medium">
+            <div className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200/50 text-orange-900">
+              <span className="text-orange-700">ID</span>
+              <span className="text-orange-900 font-semibold">{test.testCode ?? (test.id ? `TST-${test.id.slice(-8).toUpperCase()}` : "-")}</span>
             </div>
-            <div className="flex items-center gap-2 bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50">
-              <span className="text-zinc-400">Submitted</span>
+            <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200/50 text-emerald-900">
+              <span className="text-emerald-800">Submitted</span>
             </div>
-            <div className="flex items-center gap-2 bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50">
-              <span className="text-zinc-700 font-semibold">{summary.totalQuestions}</span>
-              <span className="text-zinc-400">Questions</span>
+            <div className="flex items-center gap-2 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200/50 text-rose-900">
+              <span className="text-rose-900 font-semibold">{summary.totalQuestions}</span>
+              <span className="text-rose-700">Questions</span>
             </div>
-            <div className="flex items-center gap-2 bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50">
+            <div className="flex items-center gap-2 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200/50 text-amber-900">
               <ClockIcon />
-              <span className="text-zinc-700 font-semibold">{formatDuration(attempt.totalTimeSpentSeconds)}</span>
+              <span className="text-amber-900 font-semibold">{formatDuration(attempt.totalTimeSpentSeconds)}</span>
             </div>
           </div>
         </div>
@@ -226,13 +226,13 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
               </span>
             </div>
           </div>
-          <div className="text-[13px] font-bold text-zinc-500 tracking-widest uppercase">
+          <div className="text-[13px] font-bold text-zinc-900 tracking-widest uppercase">
             {getPerformanceStatus(scorePct)}
           </div>
         </div>
 
         {/* Extended Stats List connected to Score */}
-        <div className="flex flex-col gap-3.5 text-[14px] font-medium text-zinc-500 min-w-[180px] pl-8 border-l border-zinc-100">
+        <div className="flex flex-col gap-3.5 text-[14px] font-medium text-zinc-900 min-w-[180px] pl-8 border-l border-zinc-100">
           <div className="flex items-center justify-between gap-6">
             <span>Score</span>
             <span className="font-semibold text-zinc-900">{result.score}</span>
@@ -274,10 +274,10 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <h3 className="text-[20px] font-bold tracking-tight text-zinc-900">{getSubjectLabel(subject.subject)}</h3>
-                    <p className="text-[13px] text-zinc-400 font-medium mt-1">{totalQuestions} Questions</p>
+                    <p className="text-[13px] text-zinc-900 font-medium mt-1">{totalQuestions} Questions</p>
                   </div>
                   <div className="flex flex-col items-end">
-                    <div className="text-[12px] text-zinc-400 font-semibold tracking-wider uppercase mb-1">Score</div>
+                    <div className="text-[12px] text-zinc-900 font-semibold tracking-wider uppercase mb-1">Score</div>
                     <div className="flex items-baseline gap-1">
                       <span className="text-[28px] font-bold leading-none text-black">{subject.score}</span>
                       <span className="text-[14px] font-bold text-black">/ {subjectTotal}</span>
@@ -288,7 +288,7 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
                 {/* Accuracy Progress Bar */}
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-semibold text-zinc-500">Accuracy</span>
+                    <span className="text-[13px] font-semibold text-zinc-900">Accuracy</span>
                     <span className={`text-[14px] font-bold ${getAccuracyColor(subject.accuracy)}`}>{subject.accuracy}%</span>
                   </div>
                   <div className="h-[6px] w-full rounded-full bg-zinc-100 overflow-hidden">
@@ -299,10 +299,10 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
                 {/* Stats Row */}
                 <div className="pt-5 border-t border-zinc-100 mt-2">
                   <div className="flex items-center justify-between text-[13px] font-medium">
-                    <div className="flex items-center gap-1.5"><CheckCircleIcon /> <span className="text-zinc-400">Correct</span> <span className="font-semibold text-zinc-800 ml-0.5">{subject.correct}</span></div>
-                    <div className="flex items-center gap-1.5"><XCircleIcon /> <span className="text-zinc-400">Wrong</span> <span className="font-semibold text-zinc-800 ml-0.5">{subject.incorrect}</span></div>
-                    <div className="flex items-center gap-1.5"><MinusCircleIcon /> <span className="text-zinc-400">Skipped</span> <span className="font-semibold text-zinc-800 ml-0.5">{subject.unanswered}</span></div>
-                    <div className="flex items-center gap-1.5"><span className="text-zinc-300">Dropped</span> <span className="font-semibold text-zinc-800 ml-0.5">{subject.ignored}</span></div>
+                    <div className="flex items-center gap-1.5 text-emerald-600"><CheckCircleIcon /> <span>Correct</span> <span className="font-semibold text-zinc-900 text-[20px] ml-1.5">{subject.correct}</span></div>
+                    <div className="flex items-center gap-1.5 text-rose-600"><XCircleIcon /> <span>Wrong</span> <span className="font-semibold text-zinc-900 text-[20px] ml-1.5">{subject.incorrect}</span></div>
+                    <div className="flex items-center gap-1.5 text-amber-500"><MinusCircleIcon /> <span>Skipped</span> <span className="font-semibold text-zinc-900 text-[20px] ml-1.5">{subject.unanswered}</span></div>
+
                   </div>
                 </div>
 
@@ -332,7 +332,7 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
     <div className="flex flex-col justify-between h-[96px] rounded-[20px] border border-zinc-200/60 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1">
       <div className="flex items-center gap-2.5">
         <div className={`${color}`}>{icon}</div>
-        <div className="text-[13px] font-semibold text-zinc-500">{label}</div>
+        <div className="text-[13px] font-semibold text-zinc-900">{label}</div>
       </div>
       <div className="flex items-end justify-end w-full">
         <div className="text-[32px] font-bold tracking-tight text-zinc-900 leading-none">{value}</div>
@@ -345,11 +345,11 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
 
 function QuestionLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-5 text-[13px] font-semibold text-zinc-500">
+    <div className="flex flex-wrap items-center gap-5 text-[13px] font-semibold text-zinc-900">
       <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-400" />Correct</span>
       <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-rose-400" />Incorrect</span>
       <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-zinc-300" />Unanswered</span>
-      <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-zinc-200" />Dropped</span>
+
     </div>
   );
 }
@@ -372,12 +372,12 @@ function QuestionList({ questions }: { questions: ResultDashboardProps["result"]
           { key: "correct", label: "Correct", count: questions.filter(q => q.outcome === "correct").length },
           { key: "incorrect", label: "Incorrect", count: questions.filter(q => q.outcome === "incorrect").length },
           { key: "unanswered", label: "Unanswered", count: questions.filter(q => q.outcome === "unanswered").length },
-          { key: "ignored", label: "Dropped", count: questions.filter(q => q.outcome === "ignored").length },
+
         ].filter(tab => tab.count > 0).map(tab => (
           <button
             key={tab.key ?? "all"}
             onClick={() => { setFilterOutcome(tab.key); setDisplayCount(20); }}
-            className={`px-4 py-2 rounded-xl text-[13px] font-semibold transition-all duration-200 ${filterOutcome === tab.key ? "bg-zinc-900 text-white shadow-md" : "bg-zinc-50 border border-zinc-200/50 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}`}
+            className={`px-4 py-2 rounded-xl text-[13px] font-semibold transition-all duration-200 ${filterOutcome === tab.key ? "bg-zinc-900 text-white shadow-md" : "bg-zinc-50 border border-zinc-200/50 text-zinc-900 hover:bg-zinc-100 hover:text-zinc-900"}`}
           >
             {tab.label} <span className="opacity-60 ml-1 font-medium">{tab.count}</span>
           </button>
@@ -391,7 +391,7 @@ function QuestionList({ questions }: { questions: ResultDashboardProps["result"]
       </div>
 
       {visibleQuestions.length === 0 && (
-        <div className="flex items-center justify-center py-20 text-zinc-400 font-medium">
+        <div className="flex items-center justify-center py-20 text-zinc-900 font-medium">
           No questions match the current filter.
         </div>
       )}
@@ -399,7 +399,7 @@ function QuestionList({ questions }: { questions: ResultDashboardProps["result"]
       {displayCount < filtered.length && (
         <button
           onClick={() => setDisplayCount((prev) => prev + 50)}
-          className="mt-2 w-full rounded-[16px] border border-dashed border-zinc-300 bg-zinc-50/50 py-4 text-[13px] font-bold text-zinc-500 transition-all hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 active:scale-[0.99]"
+          className="mt-2 w-full rounded-[16px] border border-dashed border-zinc-300 bg-zinc-50/50 py-4 text-[13px] font-bold text-zinc-900 transition-all hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-900 active:scale-[0.99]"
         >
           Load More ({filtered.length - displayCount} remaining)
         </button>
@@ -414,8 +414,8 @@ function QuestionCard({ question }: { question: ResultDashboardProps["result"]["
   const outcomeConfig: Record<string, { bg: string; text: string; label: string; dot: string; border: string }> = {
     correct: { bg: "bg-emerald-50", border: "border-emerald-200/50", text: "text-emerald-700", label: "Correct", dot: "bg-emerald-400" },
     incorrect: { bg: "bg-rose-50", border: "border-rose-200/50", text: "text-rose-700", label: "Incorrect", dot: "bg-rose-400" },
-    unanswered: { bg: "bg-zinc-50", border: "border-zinc-200/50", text: "text-zinc-600", label: "Unanswered", dot: "bg-zinc-300" },
-    ignored: { bg: "bg-zinc-50", border: "border-zinc-200/50", text: "text-zinc-500", label: "Dropped", dot: "bg-zinc-200" },
+    unanswered: { bg: "bg-zinc-50", border: "border-zinc-200/50", text: "text-zinc-900", label: "Unanswered", dot: "bg-zinc-300" },
+    ignored: { bg: "bg-zinc-50", border: "border-zinc-200/50", text: "text-zinc-900", label: "Dropped", dot: "bg-zinc-200" },
   };
   const cfg = outcomeConfig[question.outcome] ?? outcomeConfig.unanswered;
 
@@ -424,16 +424,16 @@ function QuestionCard({ question }: { question: ResultDashboardProps["result"]["
       {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-6 pb-5 border-b border-zinc-100">
         <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-200/60 text-[14px] font-bold text-zinc-700 shadow-sm">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-200/60 text-[14px] font-bold text-zinc-900 shadow-sm">
             {question.orderIndex}
           </div>
           <div className="flex flex-col">
             <span className="text-[14px] font-bold text-zinc-900">{getSubjectLabel(question.subject)}</span>
-            {question.chapter && <span className="text-[13px] text-zinc-400 font-medium">{question.chapter}</span>}
+            {question.chapter && <span className="text-[13px] text-zinc-900 font-medium">{question.chapter}</span>}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden sm:flex items-center gap-1.5 text-[12px] text-zinc-500 font-semibold bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50 tracking-wide uppercase">
+          <span className="hidden sm:flex items-center gap-1.5 text-[12px] text-zinc-900 font-semibold bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-200/50 tracking-wide uppercase">
             <ClockIcon /> {question.timeSpentSeconds}s
           </span>
           <span className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text} border ${cfg.border}`}>
@@ -448,7 +448,7 @@ function QuestionCard({ question }: { question: ResultDashboardProps["result"]["
         <QuestionContent
           prompt={getDisplayPrompt(question.prompt) || (question.type === "IMAGE" ? "Image based question" : "Question")}
           table={question.table}
-          promptClassName="text-[15px] leading-relaxed text-zinc-800 whitespace-pre-line font-medium"
+          promptClassName="text-[15px] leading-relaxed text-zinc-900 whitespace-pre-line font-medium"
           tableClassName="mt-4"
         />
         {question.type === "IMAGE" && question.imagePath ? (
@@ -465,7 +465,7 @@ function QuestionCard({ question }: { question: ResultDashboardProps["result"]["
                 <div key={`${question.id}-${option.key}`} className={`flex items-start justify-between gap-4 rounded-[14px] px-5 py-4 text-[14px] transition-all ${getOptionClass(optionState)}`}>
                   <div className="flex items-start gap-3">
                     <span className="font-bold text-zinc-900 shrink-0 w-5">{option.key}.</span>
-                    <span className="font-medium text-zinc-700 leading-relaxed">{renderQuestionText(option.text)}</span>
+                    <span className="font-medium text-zinc-900 leading-relaxed">{renderQuestionText(option.text)}</span>
                   </div>
                   {(optionState === "correct" || optionState === "correct-selected") && (
                     <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-100/50">
@@ -488,23 +488,23 @@ function QuestionCard({ question }: { question: ResultDashboardProps["result"]["
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 text-[13px] font-medium">
           <div className="flex items-center gap-2">
-            <span className="text-zinc-400">Your Answer:</span>
+            <span className="text-zinc-900">Your Answer:</span>
             <span className={`font-bold ${question.outcome === "incorrect" ? "text-rose-500" : question.outcome === "correct" ? "text-emerald-500" : "text-zinc-900"}`}>
               {question.selectedOptions.join(", ") || "—"}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-zinc-400">Correct Answer:</span>
+            <span className="text-zinc-900">Correct Answer:</span>
             <span className="font-bold text-emerald-500">
               {question.correctAnswers.join(", ") || "—"}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <span className="sm:hidden text-zinc-400 text-[12px] font-semibold flex items-center gap-1 bg-zinc-50 px-2 py-1 rounded-md">
+          <span className="sm:hidden text-zinc-900 text-[12px] font-semibold flex items-center gap-1 bg-zinc-50 px-2 py-1 rounded-md">
             <ClockIcon /> {question.timeSpentSeconds}s
           </span>
-          <span className={`inline-flex items-center justify-center px-4 py-1.5 rounded-lg text-[13px] font-bold ${question.awardedMarks > 0 ? "bg-emerald-50 text-emerald-600 border border-emerald-100/50" : question.awardedMarks < 0 ? "bg-rose-50 text-rose-600 border border-rose-100/50" : "bg-zinc-50 text-zinc-500 border border-zinc-200/50"}`}>
+          <span className={`inline-flex items-center justify-center px-4 py-1.5 rounded-lg text-[13px] font-bold ${question.awardedMarks > 0 ? "bg-emerald-50 text-emerald-600 border border-emerald-100/50" : question.awardedMarks < 0 ? "bg-rose-50 text-rose-600 border border-rose-100/50" : "bg-zinc-50 text-zinc-900 border border-zinc-200/50"}`}>
             {question.awardedMarks > 0 ? "+" : ""}{question.awardedMarks} marks
           </span>
         </div>
