@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getLiveTestData } from "@/lib/data";
 import { getCurrentStudent } from "@/lib/student-auth";
@@ -178,4 +179,3 @@ const ShieldIconDetail = () => (
 );
 
 
-import Link from "next/link";
