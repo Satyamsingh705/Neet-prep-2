@@ -3,6 +3,8 @@ import { getLiveTestData, getLiveLeaderboard } from "@/lib/data";
 import { getCurrentStudent } from "@/lib/student-auth";
 import { RealtimeLeaderboard } from "@/components/live/realtime-leaderboard";
 
+export const dynamic = "force-dynamic";
+
 export default async function LiveLeaderboardPage({ params }: { params: Promise<{ id: string }> }) {
   const student = await getCurrentStudent();
   const { id } = await params;

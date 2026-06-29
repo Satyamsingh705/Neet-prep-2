@@ -3,6 +3,8 @@ import { getLiveTestData } from "@/lib/data";
 import { requireCurrentStudent } from "@/lib/student-auth";
 import { ExamClient } from "@/components/exam/exam-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function LiveExamPage({ params }: { params: Promise<{ id: string }> }) {
   const student = await requireCurrentStudent();
   const { id } = await params;

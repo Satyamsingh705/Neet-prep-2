@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 const databaseUrl = process.env.DATABASE_URL ?? "";
@@ -85,6 +85,82 @@ if (hasRequiredDelegates(cachedPrisma)) {
 
 export const prisma = prismaClient;
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+// Cache the singleton on globalThis in ALL environments (including production).
+// On Vercel, warm serverless invocations share the module scope, so this prevents
+// creating new PrismaClient instances on every request — the #1 cause of
+// connection pool exhaustion under concurrent load.
+globalForPrisma.prisma = prisma;
+
+/**
+ * Checks whether an error is a transient database connectivity issue
+ * (connection pool timeout, connection refused, etc.) that can be retried.
+ */
+export function isTransientDbError(error: unknown): boolean {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    // P2024 = "Timed out fetching a new connection from the connection pool"
+    // P1001 = "Can't reach database server"
+    // P1008 = "Operations timed out"
+    // P1017 = "Server has closed the connection"
+    // P2028 = "Transaction API error" (e.g. transaction timeout)
+    // P2034 = "Transaction failed due to a write conflict or a deadlock"
+    return ["P2024", "P1001", "P1008", "P1017", "P2028", "P2034"].includes(error.code);
+  }
+
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return true;
+  }
+
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("timed out fetching a new connection") ||
+      msg.includes("connection pool timeout") ||
+      msg.includes("connection refused") ||
+      msg.includes("connection reset") ||
+      msg.includes("too many connections") ||
+      msg.includes("server has closed the connection") ||
+      msg.includes("econnreset") ||
+      msg.includes("econnrefused") ||
+      msg.includes("transaction timeout") ||
+      msg.includes("deadlock") ||
+      msg.includes("write conflict")
+    );
+  }
+
+  return false;
+}
+
+/**
+ * Retry wrapper for database operations that may fail due to transient
+ * connection pool exhaustion. Uses exponential backoff.
+ * 
+ * @param fn - The async function to retry
+ * @param maxRetries - Maximum number of retries (default 3)
+ * @param baseDelayMs - Initial delay in ms before first retry (default 150)
+ */
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelayMs = 150,
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < maxRetries && isTransientDbError(error)) {
+        const jitter = Math.random() * 50;
+        const delay = baseDelayMs * Math.pow(2, attempt) + jitter;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw lastError;
 }

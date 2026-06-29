@@ -1,5 +1,5 @@
 import { getCurrentAdmin } from "@/lib/admin-auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, withRetry } from "@/lib/prisma";
 import { LiveTestForm } from "@/components/admin/live-test-form";
 import { AdminLiveTestsManager } from "@/components/admin/admin-live-tests-manager";
 
@@ -7,20 +7,41 @@ export default async function AdminLiveTestsPage() {
   const admin = await getCurrentAdmin();
   if (!admin) return <div>Unauthorized</div>;
 
-  const [liveTests, testTemplates] = await Promise.all([
-    prisma.liveTest.findMany({
-      orderBy: { startTime: "desc" },
-      include: {
-        _count: { select: { attempts: true } },
-        testTemplate: { select: { name: true } },
-      },
-    }),
-    prisma.test.findMany({
-      where: { published: true },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  let liveTests: {
+    id: string;
+    title: string;
+    startTime: Date;
+    durationMinutes: number;
+    status: string;
+    _count: { attempts: number };
+    testTemplate: { name: string };
+    [key: string]: unknown;
+  }[] = [];
+  let testTemplates: { id: string; name: string }[] = [];
+
+  try {
+    [liveTests, testTemplates] = await Promise.all([
+      withRetry(() =>
+        prisma.liveTest.findMany({
+          orderBy: { startTime: "desc" },
+          include: {
+            _count: { select: { attempts: true } },
+            testTemplate: { select: { name: true } },
+          },
+        })
+      ),
+      withRetry(() =>
+        prisma.test.findMany({
+          where: { published: true },
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        })
+      ),
+    ]);
+  } catch (error) {
+    console.error("[admin/live-tests] Failed to load data:", error);
+    // Fall through with empty arrays — page will render with empty state
+  }
 
   return (
     <main className="mx-auto flex max-w-[1200px] flex-col gap-8 px-6 py-8">
@@ -43,3 +64,4 @@ export default async function AdminLiveTestsPage() {
     </main>
   );
 }
+

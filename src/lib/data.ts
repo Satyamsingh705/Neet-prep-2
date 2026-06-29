@@ -1,6 +1,6 @@
 import { AttemptStatus, Prisma, QuestionType, TestMode } from "@prisma/client";
 import { unstable_cache } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { prisma, withRetry } from "@/lib/prisma";
 import { getQuestionTable } from "@/lib/question-content";
 import { evaluateAttempt, getInitialAnswerState, getPaletteStatus, normalizeStoredAnswer } from "@/lib/neet";
 import { getSubjectLabel } from "@/lib/subject-categories";
@@ -74,64 +74,70 @@ async function withTiming<T>(name: string, fn: () => Promise<T>): Promise<T> {
 }
 
 export async function getDashboardData() {
-  return withTiming("getDashboardData", async () => {
-    try {
-      const [tests, questions, attempts, totalQuestions] = await Promise.all([
-        prisma.test.findMany({
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            name: true,
-            totalQuestions: true,
-            durationMinutes: true,
-            mode: true,
-            published: true,
-            testCode: true,
-            createdAt: true,
-            _count: { select: { attempts: true } },
-          },
-          take: 10,
-        }),
-        prisma.question.groupBy({ by: ["subject"], _count: { _all: true } }),
-        prisma.attempt.findMany({
-          orderBy: { startedAt: "desc" },
-          take: 5,
-          select: {
-            id: true,
-            studentName: true,
-            status: true,
-            startedAt: true,
-            test: {
+  try {
+    return await unstable_cache(
+      async () => {
+        return withTiming("getDashboardData", async () => {
+          const [tests, questions, attempts, totalQuestions] = await Promise.all([
+            prisma.test.findMany({
+              orderBy: { createdAt: "desc" },
               select: {
                 id: true,
                 name: true,
+                totalQuestions: true,
+                durationMinutes: true,
+                mode: true,
+                published: true,
                 testCode: true,
+                createdAt: true,
+                _count: { select: { attempts: true } },
               },
-            },
-          },
-        }),
-        prisma.question.count(),
-      ]);
+              take: 10,
+            }),
+            prisma.question.groupBy({ by: ["subject"], _count: { _all: true } }),
+            prisma.attempt.findMany({
+              orderBy: { startedAt: "desc" },
+              take: 5,
+              select: {
+                id: true,
+                studentName: true,
+                status: true,
+                startedAt: true,
+                test: {
+                  select: {
+                    id: true,
+                    name: true,
+                    testCode: true,
+                  },
+                },
+              },
+            }),
+            prisma.question.count(),
+          ]);
 
-      const normalizedQuestions = Array.from(
-        questions.reduce((groups, group) => {
-          const subject = getSubjectLabel(group.subject);
-          const current = groups.get(subject) ?? { subject, _count: { _all: 0 } };
-          current._count._all += group._count._all;
-          groups.set(subject, current);
-          return groups;
-        }, new Map<string, { subject: string; _count: { _all: number } }>()).values(),
-      );
+          const normalizedQuestions = Array.from(
+            questions.reduce((groups, group) => {
+              const subject = getSubjectLabel(group.subject);
+              const current = groups.get(subject) ?? { subject, _count: { _all: 0 } };
+              current._count._all += group._count._all;
+              groups.set(subject, current);
+              return groups;
+            }, new Map<string, { subject: string; _count: { _all: number } }>()).values(),
+          );
 
-      return { tests, questions: normalizedQuestions, attempts, totalQuestions };
-    } catch (error) {
-      if (isDatabaseUnavailableError(error)) {
-        return { tests: [], questions: [], attempts: [], totalQuestions: 0 };
-      }
-
-      throw error;
+          return { tests, questions: normalizedQuestions, attempts, totalQuestions };
+        });
+      },
+      ["admin-dashboard"],
+      { revalidate: 30, tags: ["tests", "attempts", "questions"] }
+    )();
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return { tests: [], questions: [], attempts: [], totalQuestions: 0 };
     }
-  });
+
+    throw error;
+  }
 }
 
 export async function getStudentHomeSummary() {
@@ -829,33 +835,94 @@ export async function getLiveArenaData(studentId?: string) {
 
 export async function getLiveTestData(liveTestId: string, studentId?: string) {
   return withTiming("getLiveTestData", async () => {
-    const liveTest = await prisma.liveTest.findUnique({
-      where: { id: liveTestId },
-      include: {
-        testTemplate: {
-          include: {
-            testQuestions: {
-              orderBy: { orderIndex: "asc" },
-              include: {
-                question: true,
+    // Step 1: Cached query for live test + template + questions (static content)
+    const cachedData = await unstable_cache(
+      async () => {
+        const liveTest = await withRetry(() =>
+          prisma.liveTest.findUnique({
+            where: { id: liveTestId },
+            include: {
+              testTemplate: {
+                select: {
+                  id: true,
+                  name: true,
+                  testCode: true,
+                  totalQuestions: true,
+                  totalEvaluatedQuestions: true,
+                  durationMinutes: true,
+                  correctMarks: true,
+                  incorrectMarks: true,
+                  unansweredMarks: true,
+                  mode: true,
+                  testQuestions: {
+                    orderBy: { orderIndex: "asc" },
+                    select: {
+                      section: true,
+                      orderIndex: true,
+                      question: {
+                        select: {
+                          id: true,
+                          subject: true,
+                          chapter: true,
+                          type: true,
+                          prompt: true,
+                          options: true,
+                          imagePath: true,
+                          correctAnswers: true,
+                          answerPolicy: true,
+                          metadata: true,
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
-          },
-        },
-        attempts: studentId ? {
-          where: { studentId },
-          take: 1,
-        } : false,
+          })
+        );
+        return liveTest;
       },
-    });
+      [`live-test-data-${liveTestId}`],
+      { revalidate: 60, tags: ["live-tests", "questions"] }
+    )();
 
-    if (!liveTest) return null;
+    if (!cachedData) return null;
 
-    const questions = liveTest.testTemplate.testQuestions.map(normalizeQuestion);
-    const attempt = liveTest.attempts?.[0] ?? null;
+    // unstable_cache serializes Date objects to ISO strings.
+    // Reconstitute them so downstream comparisons (e.g. now >= startTime) work correctly.
+    const liveTestWithDates = {
+      ...cachedData,
+      startTime: new Date(cachedData.startTime),
+      endTime: new Date(cachedData.endTime),
+      createdAt: new Date(cachedData.createdAt),
+      updatedAt: new Date(cachedData.updatedAt),
+    };
+
+    const questions = liveTestWithDates.testTemplate.testQuestions.map(normalizeQuestion);
+
+    // Step 2: Uncached per-student attempt lookup (must be fresh)
+    let attempt = null;
+    if (studentId) {
+      try {
+        const studentAttempts = await withRetry(() =>
+          prisma.liveTestAttempt.findMany({
+            where: { liveTestId, studentId },
+            take: 1,
+          })
+        );
+        attempt = studentAttempts[0] ?? null;
+      } catch (error) {
+        console.error("[getLiveTestData] Failed to fetch student attempt:", error);
+        // Don't fail the whole page if we can't look up the attempt
+        attempt = null;
+      }
+    }
 
     return {
-      liveTest,
+      liveTest: {
+        ...liveTestWithDates,
+        attempts: attempt ? [attempt] : [],
+      },
       questions,
       attempt,
     };
@@ -864,18 +931,20 @@ export async function getLiveTestData(liveTestId: string, studentId?: string) {
 
 export async function startLiveAttempt(liveTestId: string, student: { id: string; username: string; displayName: string | null }) {
   return withTiming("startLiveAttempt", async () => {
-    const liveTest = await prisma.liveTest.findUnique({
-      where: { id: liveTestId },
-      include: {
-        testTemplate: {
-          include: {
-            testQuestions: {
-              select: { questionId: true },
+    const liveTest = await withRetry(() =>
+      prisma.liveTest.findUnique({
+        where: { id: liveTestId },
+        include: {
+          testTemplate: {
+            include: {
+              testQuestions: {
+                select: { questionId: true },
+              },
             },
           },
         },
-      },
-    });
+      })
+    );
 
     if (!liveTest) throw new Error("Live test not found.");
 
@@ -884,9 +953,11 @@ export async function startLiveAttempt(liveTestId: string, student: { id: string
     if (now > liveTest.endTime) throw new Error("Test has already ended.");
 
     // Check if attempt already exists
-    const existing = await prisma.liveTestAttempt.findUnique({
-      where: { liveTestId_studentId: { liveTestId, studentId: student.id } },
-    });
+    const existing = await withRetry(() =>
+      prisma.liveTestAttempt.findUnique({
+        where: { liveTestId_studentId: { liveTestId, studentId: student.id } },
+      })
+    );
 
     if (existing) return existing;
 
@@ -894,15 +965,30 @@ export async function startLiveAttempt(liveTestId: string, student: { id: string
       liveTest.testTemplate.testQuestions.map((row) => [row.questionId, getInitialAnswerState()]),
     );
 
-    return prisma.liveTestAttempt.create({
-      data: {
-        liveTestId,
-        studentId: student.id,
-        studentName: student.displayName ?? student.username,
-        answers,
-        startedAt: now,
-      },
-    });
+    try {
+      return await withRetry(() =>
+        prisma.liveTestAttempt.create({
+          data: {
+            liveTestId,
+            studentId: student.id,
+            studentName: student.displayName ?? student.username,
+            answers,
+            startedAt: now,
+          },
+        })
+      );
+    } catch (error) {
+      // Handle race condition: if another request created the attempt between
+      // our findUnique and create, we get a unique constraint violation (P2002).
+      // Return the existing record instead of failing.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        const raceWinner = await prisma.liveTestAttempt.findUnique({
+          where: { liveTestId_studentId: { liveTestId, studentId: student.id } },
+        });
+        if (raceWinner) return raceWinner;
+      }
+      throw error;
+    }
   });
 }
 
@@ -912,37 +998,41 @@ export async function persistLiveAttempt(params: {
   answers: StoredAnswersMap;
   timeConsumedSeconds: number;
 }) {
-  return prisma.liveTestAttempt.update({
-    where: { 
-      id: params.attemptId,
-      studentId: params.studentId,
-    },
-    data: {
-      answers: params.answers,
-      timeConsumedSeconds: params.timeConsumedSeconds,
-      lastSavedAt: new Date(),
-    },
-  });
+  return withRetry(() =>
+    prisma.liveTestAttempt.update({
+      where: { 
+        id: params.attemptId,
+        studentId: params.studentId,
+      },
+      data: {
+        answers: params.answers,
+        timeConsumedSeconds: params.timeConsumedSeconds,
+        lastSavedAt: new Date(),
+      },
+    })
+  );
 }
 
 export async function submitLiveAttempt(attemptId: string, studentId: string, autoSubmitted = false) {
-  const attempt = await prisma.liveTestAttempt.findUnique({
-    where: { id: attemptId, studentId },
-    include: {
-      liveTest: {
-        include: {
-          testTemplate: {
-            include: {
-              testQuestions: {
-                orderBy: { orderIndex: "asc" },
-                include: { question: true },
+  const attempt = await withRetry(() =>
+    prisma.liveTestAttempt.findUnique({
+      where: { id: attemptId, studentId },
+      include: {
+        liveTest: {
+          include: {
+            testTemplate: {
+              include: {
+                testQuestions: {
+                  orderBy: { orderIndex: "asc" },
+                  include: { question: true },
+                },
               },
             },
           },
         },
       },
-    },
-  });
+    })
+  );
 
   if (!attempt) throw new Error("Attempt not found.");
   if (attempt.status !== "IN_PROGRESS") return attempt;
@@ -964,62 +1054,93 @@ export async function submitLiveAttempt(attemptId: string, studentId: string, au
     attempt.answers as any,
   );
 
-  return prisma.liveTestAttempt.update({
-    where: { id: attemptId },
-    data: {
-      status: autoSubmitted ? "AUTO_SUBMITTED" : "SUBMITTED",
-      submittedAt: new Date(),
-      score: result.score,
-      correctAnswers: result.summary.correct,
-      wrongAnswers: result.summary.incorrect,
-      unanswered: result.summary.unanswered,
-      accuracy: result.summary.accuracy,
-      result: result as any,
-    },
-  });
+  return withRetry(() =>
+    prisma.liveTestAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status: autoSubmitted ? "AUTO_SUBMITTED" : "SUBMITTED",
+        submittedAt: new Date(),
+        score: result.score,
+        correctAnswers: result.summary.correct,
+        wrongAnswers: result.summary.incorrect,
+        unanswered: result.summary.unanswered,
+        accuracy: result.summary.accuracy,
+        result: result as any,
+      },
+    })
+  );
 }
+
+// In-memory lock to prevent concurrent auto-finalization of the same live test.
+// Without this, 100 students visiting the leaderboard simultaneously would each
+// trigger auto-submission of all in-progress attempts, overwhelming the DB.
+const autoFinalizeInProgress = new Set<string>();
 
 export async function getLiveLeaderboard(liveTestId: string) {
   return withTiming("getLiveLeaderboard", async () => {
     // Auto-submit any in-progress attempts when the test window has ended.
-    try {
-      const liveTest = await prisma.liveTest.findUnique({ where: { id: liveTestId }, select: { endTime: true } });
-      if (liveTest && new Date() > liveTest.endTime) {
-        const inProgress = await prisma.liveTestAttempt.findMany({ where: { liveTestId, status: "IN_PROGRESS" }, select: { id: true, studentId: true } });
-        for (const att of inProgress) {
-          try {
-            // mark as auto-submitted and evaluate
-            // pass autoSubmitted=true so status becomes AUTO_SUBMITTED
-            // eslint-disable-next-line no-await-in-loop
-            await submitLiveAttempt(att.id, att.studentId, true);
-          } catch (err) {
-            console.error("Failed to auto-submit live attempt:", att.id, err);
+    // Guarded by an in-memory lock to prevent parallel execution.
+    if (!autoFinalizeInProgress.has(liveTestId)) {
+      try {
+        const liveTest = await withRetry(() =>
+          prisma.liveTest.findUnique({ where: { id: liveTestId }, select: { endTime: true } })
+        );
+        if (liveTest && new Date() > liveTest.endTime) {
+          const inProgress = await withRetry(() =>
+            prisma.liveTestAttempt.findMany({
+              where: { liveTestId, status: "IN_PROGRESS" },
+              select: { id: true, studentId: true },
+            })
+          );
+
+          if (inProgress.length > 0) {
+            autoFinalizeInProgress.add(liveTestId);
+            try {
+              // Process in batches of 5 to avoid overwhelming the connection pool
+              const BATCH_SIZE = 5;
+              for (let i = 0; i < inProgress.length; i += BATCH_SIZE) {
+                const batch = inProgress.slice(i, i + BATCH_SIZE);
+                await Promise.allSettled(
+                  batch.map((att) =>
+                    submitLiveAttempt(att.id, att.studentId, true).catch((err) => {
+                      console.error("Failed to auto-submit live attempt:", att.id, err);
+                    })
+                  )
+                );
+              }
+            } finally {
+              autoFinalizeInProgress.delete(liveTestId);
+            }
           }
         }
+      } catch (err) {
+        console.error("Error during live leaderboard auto-finalize:", err);
+        autoFinalizeInProgress.delete(liveTestId);
       }
-    } catch (err) {
-      console.error("Error during live leaderboard auto-finalize:", err);
     }
-    const attempts = await prisma.liveTestAttempt.findMany({
-      where: {
-        liveTestId,
-        status: { in: ["SUBMITTED", "AUTO_SUBMITTED"] },
-      },
-      select: {
-        id: true,
-        studentId: true,
-        studentName: true,
-        score: true,
-        timeConsumedSeconds: true,
-        submittedAt: true,
-        accuracy: true,
-      },
-      orderBy: [
-        { score: "desc" },
-        { timeConsumedSeconds: "asc" },
-        { submittedAt: "asc" },
-      ],
-    });
+
+    const attempts = await withRetry(() =>
+      prisma.liveTestAttempt.findMany({
+        where: {
+          liveTestId,
+          status: { in: ["SUBMITTED", "AUTO_SUBMITTED"] },
+        },
+        select: {
+          id: true,
+          studentId: true,
+          studentName: true,
+          score: true,
+          timeConsumedSeconds: true,
+          submittedAt: true,
+          accuracy: true,
+        },
+        orderBy: [
+          { score: "desc" },
+          { timeConsumedSeconds: "asc" },
+          { submittedAt: "asc" },
+        ],
+      })
+    );
 
     return attempts.map((attempt, index) => ({
       ...attempt,

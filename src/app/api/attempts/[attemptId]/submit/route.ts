@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { persistAttempt, submitAttempt } from "@/lib/data";
-import { getCurrentStudentRecord } from "@/lib/student-auth";
+import { getCurrentStudent } from "@/lib/student-auth";
+import { isTransientDbError } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const preferredRegion = "bom1";
@@ -26,7 +27,7 @@ function isAttemptNotFoundError(error: unknown): error is Error {
 async function handleSubmit(request: Request, params: Promise<{ attemptId: string }>) {
   try {
     const { attemptId } = await params;
-    const student = await getCurrentStudentRecord();
+    const student = await getCurrentStudent();
 
     if (!student) {
       return NextResponse.json({ error: "Student login required." }, { status: 401 });
@@ -65,6 +66,9 @@ async function handleSubmit(request: Request, params: Promise<{ attemptId: strin
     }
 
     console.error("[attempt-submit]", error);
+    if (isTransientDbError(error)) {
+      return NextResponse.json({ error: "Server is under heavy load. Please retry." }, { status: 503 });
+    }
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to submit attempt." }, { status: 400 });
   }
 }

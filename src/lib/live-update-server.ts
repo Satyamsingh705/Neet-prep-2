@@ -1,29 +1,16 @@
-import fs from "fs";
-import path from "path";
+// In-memory live update signaling.
+// On Vercel, the filesystem is read-only (except /tmp), so the previous
+// approach of writing to .next/live-update.json silently failed on every call.
+// In-memory storage works correctly within a warm serverless invocation's lifetime.
 
-const UPDATE_FILE = path.join(process.cwd(), ".next", "live-update.json");
+let lastUpdateTimestamp = 0;
 
 export function writeServerLiveUpdate() {
-  try {
-    const payload = { timestamp: Date.now() };
-    // ensure .next exists
-    const dir = path.dirname(UPDATE_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(UPDATE_FILE, JSON.stringify(payload), "utf8");
-  } catch (err) {
-    // ignore write failures
-    console.error("Failed to write live update file:", err);
-  }
+  lastUpdateTimestamp = Date.now();
 }
 
 export function readServerLiveUpdate() {
-  try {
-    if (!fs.existsSync(UPDATE_FILE)) return { timestamp: 0 };
-    const raw = fs.readFileSync(UPDATE_FILE, "utf8");
-    return JSON.parse(raw) as { timestamp: number };
-  } catch (err) {
-    return { timestamp: 0 };
-  }
+  return { timestamp: lastUpdateTimestamp };
 }
 
 export default {

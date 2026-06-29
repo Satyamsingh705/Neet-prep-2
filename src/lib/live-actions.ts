@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import { prisma, withRetry } from "@/lib/prisma";
 import { startLiveAttempt, persistLiveAttempt, submitLiveAttempt } from "@/lib/data";
 import { getCurrentStudent } from "@/lib/student-auth";
 import { StoredAnswersMap } from "@/lib/types";
@@ -48,32 +49,39 @@ export async function registerForBattleAction(liveTestId: string) {
   if (!student) throw new Error("Unauthorized");
 
   try {
-    const registration = await prisma.$transaction(async (tx) => {
-      const existing = await tx.battleRegistration.findUnique({
-        where: { liveTestId_studentId: { liveTestId, studentId: student.id } },
-      });
+    const registration = await withRetry(() =>
+      prisma.$transaction(async (tx) => {
+        const existing = await tx.battleRegistration.findUnique({
+          where: { liveTestId_studentId: { liveTestId, studentId: student.id } },
+        });
 
-      if (existing) return existing;
+        if (existing) return existing;
 
-      const reg = await tx.battleRegistration.create({
-        data: {
-          liveTestId,
-          studentId: student.id,
-          studentName: student.displayName ?? student.username,
-        },
-      });
+        const reg = await tx.battleRegistration.create({
+          data: {
+            liveTestId,
+            studentId: student.id,
+            studentName: student.displayName ?? student.username,
+          },
+        });
 
-      await tx.liveTest.update({
-        where: { id: liveTestId },
-        data: { registeredCount: { increment: 1 } },
-      });
+        await tx.liveTest.update({
+          where: { id: liveTestId },
+          data: { registeredCount: { increment: 1 } },
+        });
 
-      return reg;
-    });
+        return reg;
+      })
+    );
 
     revalidatePath("/live-arena");
     return { success: true, registration };
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      // Race condition: Already registered!
+      revalidatePath("/live-arena");
+      return { success: true };
+    }
     console.error("Registration error:", error);
     return { error: "Failed to register" };
   }
@@ -84,27 +92,34 @@ export async function unregisterFromBattleAction(liveTestId: string) {
   if (!student) throw new Error("Unauthorized");
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const existing = await tx.battleRegistration.findUnique({
-        where: { liveTestId_studentId: { liveTestId, studentId: student.id } },
-      });
+    await withRetry(() =>
+      prisma.$transaction(async (tx) => {
+        const existing = await tx.battleRegistration.findUnique({
+          where: { liveTestId_studentId: { liveTestId, studentId: student.id } },
+        });
 
-      if (!existing) return;
+        if (!existing) return;
 
-      await tx.battleRegistration.delete({
-        where: { id: existing.id },
-      });
+        await tx.battleRegistration.delete({
+          where: { id: existing.id },
+        });
 
-      await tx.liveTest.update({
-        where: { id: liveTestId },
-        data: { registeredCount: { decrement: 1 } },
-      });
-    });
+        await tx.liveTest.update({
+          where: { id: liveTestId },
+          data: { registeredCount: { decrement: 1 } },
+        });
+      })
+    );
 
     revalidatePath("/live-arena");
     return { success: true };
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      // Race condition: Already unregistered!
+      revalidatePath("/live-arena");
+      return { success: true };
+    }
     console.error("Unregistration error:", error);
-    return { error: "Failed to unregister" };
+    return { error: "Failed to withdraw" };
   }
 }

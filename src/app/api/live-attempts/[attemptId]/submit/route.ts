@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { submitLiveAttempt } from "@/lib/data";
-import { getCurrentStudentRecord } from "@/lib/student-auth";
+import { getCurrentStudent } from "@/lib/student-auth";
+import { isTransientDbError } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ const submitPayloadSchema = z.object({
 async function handleSubmit(request: Request, params: Promise<{ attemptId: string }>) {
   try {
     const { attemptId } = await params;
-    const student = await getCurrentStudentRecord();
+    const student = await getCurrentStudent();
     if (!student) return NextResponse.json({ error: "Student login required." }, { status: 401 });
 
     const url = new URL(request.url);
@@ -40,6 +41,9 @@ async function handleSubmit(request: Request, params: Promise<{ attemptId: strin
     return NextResponse.json({ ok: true, result });
   } catch (error) {
     console.error("[live-attempt-submit]", error);
+    if (isTransientDbError(error)) {
+      return NextResponse.json({ error: "Server is under heavy load. Please retry." }, { status: 503 });
+    }
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to submit live attempt." }, { status: 400 });
   }
 }
