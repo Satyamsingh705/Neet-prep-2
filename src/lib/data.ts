@@ -833,70 +833,76 @@ export async function getLiveArenaData(studentId?: string) {
   }
 }
 
-export async function getLiveTestData(liveTestId: string, studentId?: string) {
-  return withTiming("getLiveTestData", async () => {
-    // Step 1: Cached query for live test + template + questions (static content)
-    const cachedData = await unstable_cache(
-      async () => {
-        const liveTest = await withRetry(() =>
-          prisma.liveTest.findUnique({
-            where: { id: liveTestId },
-            include: {
-              testTemplate: {
-                select: {
-                  id: true,
-                  name: true,
-                  testCode: true,
-                  totalQuestions: true,
-                  totalEvaluatedQuestions: true,
-                  durationMinutes: true,
-                  correctMarks: true,
-                  incorrectMarks: true,
-                  unansweredMarks: true,
-                  mode: true,
-                  testQuestions: {
-                    orderBy: { orderIndex: "asc" },
-                    select: {
-                      section: true,
-                      orderIndex: true,
-                      question: {
-                        select: {
-                          id: true,
-                          subject: true,
-                          chapter: true,
-                          type: true,
-                          prompt: true,
-                          options: true,
-                          imagePath: true,
-                          correctAnswers: true,
-                          answerPolicy: true,
-                          metadata: true,
-                        },
+export async function getCachedLiveTestDetails(liveTestId: string) {
+  const cachedData = await unstable_cache(
+    async () => {
+      const liveTest = await withRetry(() =>
+        prisma.liveTest.findUnique({
+          where: { id: liveTestId },
+          include: {
+            testTemplate: {
+              select: {
+                id: true,
+                name: true,
+                testCode: true,
+                totalQuestions: true,
+                totalEvaluatedQuestions: true,
+                durationMinutes: true,
+                correctMarks: true,
+                incorrectMarks: true,
+                unansweredMarks: true,
+                mode: true,
+                testQuestions: {
+                  orderBy: { orderIndex: "asc" },
+                  select: {
+                    section: true,
+                    orderIndex: true,
+                    question: {
+                      select: {
+                        id: true,
+                        subject: true,
+                        chapter: true,
+                        type: true,
+                        prompt: true,
+                        options: true,
+                        imagePath: true,
+                        correctAnswers: true,
+                        answerPolicy: true,
+                        metadata: true,
                       },
                     },
                   },
                 },
               },
             },
-          })
-        );
-        return liveTest;
-      },
-      [`live-test-data-${liveTestId}`],
-      { revalidate: 60, tags: ["live-tests", "questions"] }
-    )();
+          },
+        })
+      );
+      return liveTest;
+    },
+    [`live-test-data-${liveTestId}`],
+    { revalidate: 60, tags: ["live-tests", "questions"] }
+  )();
 
-    if (!cachedData) return null;
+  if (!cachedData) return null;
 
-    // unstable_cache serializes Date objects to ISO strings.
-    // Reconstitute them so downstream comparisons (e.g. now >= startTime) work correctly.
-    const liveTestWithDates = {
-      ...cachedData,
-      startTime: new Date(cachedData.startTime),
-      endTime: new Date(cachedData.endTime),
-      createdAt: new Date(cachedData.createdAt),
-      updatedAt: new Date(cachedData.updatedAt),
-    };
+  // unstable_cache serializes Date objects to ISO strings.
+  // Reconstitute them so downstream comparisons (e.g. now >= startTime) work correctly.
+  return {
+    ...cachedData,
+    startTime: new Date(cachedData.startTime),
+    endTime: new Date(cachedData.endTime),
+    createdAt: new Date(cachedData.createdAt),
+    updatedAt: new Date(cachedData.updatedAt),
+  };
+}
+
+export async function getLiveTestData(liveTestId: string, studentId?: string) {
+  return withTiming("getLiveTestData", async () => {
+    // Step 1: Cached query for live test + template + questions (static content)
+    const liveTestWithDates = await getCachedLiveTestDetails(liveTestId);
+
+    if (!liveTestWithDates) return null;
 
     const questions = liveTestWithDates.testTemplate.testQuestions.map(normalizeQuestion);
 
@@ -931,20 +937,7 @@ export async function getLiveTestData(liveTestId: string, studentId?: string) {
 
 export async function startLiveAttempt(liveTestId: string, student: { id: string; username: string; displayName: string | null }) {
   return withTiming("startLiveAttempt", async () => {
-    const liveTest = await withRetry(() =>
-      prisma.liveTest.findUnique({
-        where: { id: liveTestId },
-        include: {
-          testTemplate: {
-            include: {
-              testQuestions: {
-                select: { questionId: true },
-              },
-            },
-          },
-        },
-      })
-    );
+    const liveTest = await getCachedLiveTestDetails(liveTestId);
 
     if (!liveTest) throw new Error("Live test not found.");
 
@@ -962,7 +955,7 @@ export async function startLiveAttempt(liveTestId: string, student: { id: string
     if (existing) return existing;
 
     const answers = Object.fromEntries(
-      liveTest.testTemplate.testQuestions.map((row) => [row.questionId, getInitialAnswerState()]),
+      liveTest.testTemplate.testQuestions.map((row) => [row.question.id, getInitialAnswerState()]),
     );
 
     try {
@@ -1017,27 +1010,16 @@ export async function submitLiveAttempt(attemptId: string, studentId: string, au
   const attempt = await withRetry(() =>
     prisma.liveTestAttempt.findUnique({
       where: { id: attemptId, studentId },
-      include: {
-        liveTest: {
-          include: {
-            testTemplate: {
-              include: {
-                testQuestions: {
-                  orderBy: { orderIndex: "asc" },
-                  include: { question: true },
-                },
-              },
-            },
-          },
-        },
-      },
     })
   );
 
   if (!attempt) throw new Error("Attempt not found.");
   if (attempt.status !== "IN_PROGRESS") return attempt;
 
-  const testTemplate = attempt.liveTest.testTemplate;
+  const liveTestWithDates = await getCachedLiveTestDetails(attempt.liveTestId);
+  if (!liveTestWithDates) throw new Error("Live test details not found.");
+
+  const testTemplate = liveTestWithDates.testTemplate;
   const questions = testTemplate.testQuestions.map(normalizeQuestion);
   
   const result = evaluateAttempt(
