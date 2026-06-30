@@ -775,7 +775,7 @@ export async function getLiveArenaData(studentId?: string) {
     return await unstable_cache(
       async () => {
         return withTiming("getLiveArenaData", async () => {
-          const [liveTests, studentStats, registeredBattleIds] = await Promise.all([
+          const [liveTests, studentStats, registeredBattleIds, attemptedBattleIds] = await Promise.all([
             prisma.liveTest.findMany({
               where: {
                 visibility: "PUBLIC",
@@ -801,14 +801,20 @@ export async function getLiveArenaData(studentId?: string) {
                 where: { studentId },
                 select: { liveTestId: true },
             }) : [],
+            studentId ? prisma.liveTestAttempt.findMany({
+                where: { studentId, status: { in: ["SUBMITTED", "AUTO_SUBMITTED"] } },
+                select: { liveTestId: true },
+            }) : [],
           ]);
 
           const registeredSet = new Set(registeredBattleIds.map(r => r.liveTestId));
+          const attemptedSet = new Set(attemptedBattleIds.map(r => r.liveTestId));
 
           return {
             liveTests: liveTests.map(t => ({
                 ...t,
-                isRegistered: registeredSet.has(t.id)
+                isRegistered: registeredSet.has(t.id),
+                hasAttempted: attemptedSet.has(t.id),
             })),
             stats: {
               battlesAttempted: studentStats?._count._all ?? 0,

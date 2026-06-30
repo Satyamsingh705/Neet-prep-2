@@ -16,6 +16,7 @@ type LiveTest = {
     durationMinutes: number;
     registeredCount: number;
     isRegistered?: boolean;
+    hasAttempted?: boolean;
     _count: { attempts: number };
     testTemplate: { totalQuestions: number };
 };
@@ -438,9 +439,15 @@ function ContestRow({
 
                 <div className="flex gap-3">
                     {isLive ? (
-                        <Link href={`/live-arena/${test.id}`} className="h-12 px-8 flex items-center justify-center rounded-[18px] bg-emerald-500 text-white text-[11px] font-black uppercase tracking-[0.15em] hover:bg-emerald-600 hover:scale-[1.05] transition-all shadow-xl shadow-emerald-500/30 active:scale-95" style={{ color: 'white' }}>
-                            Enter Arena
-                        </Link>
+                        test.hasAttempted ? (
+                            <Link href={`/live-arena/${test.id}/leaderboard`} className="h-12 px-8 flex items-center justify-center rounded-[18px] bg-emerald-900 text-white text-sm font-black uppercase tracking-[0.18em] border border-emerald-700 hover:bg-emerald-800 hover:scale-[1.05] transition-all shadow-2xl shadow-emerald-900/30 active:scale-95">
+                                <span className="text-white">Rankings 🏆</span>
+                            </Link>
+                        ) : (
+                            <Link href={`/live-arena/${test.id}`} className="h-12 px-8 flex items-center justify-center rounded-[18px] bg-emerald-500 text-white text-[11px] font-black uppercase tracking-[0.15em] hover:bg-emerald-600 hover:scale-[1.05] transition-all shadow-xl shadow-emerald-500/30 active:scale-95" style={{ color: 'white' }}>
+                                Enter Arena
+                            </Link>
+                        )
                     ) : isUpcoming ? (
                         <button
                             onClick={handleAction}
