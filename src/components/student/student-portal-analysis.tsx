@@ -92,7 +92,7 @@ export function StudentPortalAnalysis(props: {
 
   return (
     <section id="analysis" className="panel overflow-hidden rounded-none border-x-0 sm:rounded-[1.6rem] sm:border-x">
-      <div className="grid gap-5 bg-[linear-gradient(135deg,rgba(255,247,239,0.96),rgba(255,255,255,0.96))] px-3 py-5 sm:px-6 sm:py-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8 lg:px-10 lg:py-10">
+      <div className="grid gap-5 bg-[linear-gradient(135deg,rgba(255,247,239,0.96),rgba(255,255,255,0.96))] px-3 py-5 sm:px-6 sm:py-6 md:grid-cols-[1.15fr_0.85fr] md:gap-8 lg:px-10 lg:py-10">
         <div className="space-y-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#b56d3d]">Student Portal</p>
@@ -100,7 +100,7 @@ export function StudentPortalAnalysis(props: {
             <p className="mt-4 max-w-3xl text-base leading-7 text-[#65584a] sm:text-lg sm:leading-8">Use this dashboard to see where marks are leaking, which subjects need immediate correction, and what to cover before the next test.</p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             <div className="rounded-[1.2rem] border border-[#ead9c9] bg-white/90 p-5">
               <div className="text-sm uppercase tracking-[0.2em] text-[#957660]">Submitted</div>
               <div className="mt-2 text-4xl font-semibold text-[#2f241c]">{props.analytics.totalSubmitted}</div>

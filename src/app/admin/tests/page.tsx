@@ -8,7 +8,7 @@ export default async function AdminTestsPage() {
   const [summary, tests] = await Promise.all([getQuestionBankSummary(), getTestsForListing(undefined, { includeUnpublished: true })]);
 
   return (
-    <main className="mx-auto grid max-w-[1400px] gap-6 px-6 py-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+    <main className="grid w-full gap-6 px-4 py-8 sm:px-[1.5%] xl:px-[2%] lg:grid-cols-[minmax(0,1fr)_340px]">
       <section className="min-w-0">
         <TestBuilderForm chapters={summary.chapters} />
       </section>

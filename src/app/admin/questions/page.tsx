@@ -7,7 +7,7 @@ export default async function AdminQuestionsPage() {
   const summary = await getQuestionBankSummary();
 
   return (
-    <main className="mx-auto grid max-w-[1400px] gap-6 px-6 py-8 lg:grid-cols-[320px_1fr]">
+    <main className="grid w-full gap-6 px-4 py-8 sm:px-[1.5%] xl:px-[2%] lg:grid-cols-[320px_1fr]">
       <aside className="panel rounded-[1.4rem] p-6">
         <h1 className="text-3xl font-semibold text-[#2f241c]">Question Bank</h1>
         <div className="mt-6 space-y-4">

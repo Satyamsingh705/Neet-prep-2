@@ -33,7 +33,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-[1440px] h-[56px] items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="flex w-full h-[56px] items-center justify-between px-4 sm:px-[1.5%] xl:px-[2%]">
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-2 font-serif text-[#6b4f3f] text-2xl tracking-wide">
             NEETPrep

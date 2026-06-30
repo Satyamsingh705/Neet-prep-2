@@ -7,7 +7,7 @@ export default async function AdminStudentsPage() {
   const students = await getStudentsForAdmin();
 
   return (
-    <main className="mx-auto flex max-w-[1400px] flex-col gap-6 px-6 py-8">
+    <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-[1.5%] xl:px-[2%]">
       <section className="panel rounded-[1.4rem] p-7">
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Student Access</p>
         <h1 className="mt-3 text-4xl font-semibold text-[#2f241c]">Create and manage student login accounts.</h1>

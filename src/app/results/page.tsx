@@ -19,7 +19,7 @@ export default async function StudentResultsPage() {
   }));
 
   return (
-    <main className="mx-auto flex max-w-[1400px] flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-6 sm:py-8">
+    <main className="flex w-full flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-[1.5%] sm:py-8 xl:px-[2%]">
       <section className="panel rounded-none border-x-0 p-4 sm:rounded-[1.5rem] sm:border-x sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Student Results</p>
         <h1 className="mt-2 text-3xl font-semibold text-[#2f241c] sm:text-4xl">Submitted Test Results</h1>

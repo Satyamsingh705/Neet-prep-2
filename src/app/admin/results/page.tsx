@@ -8,7 +8,7 @@ export default async function AdminResultsPage() {
   const attempts = await getSubmittedAttemptResults();
 
   return (
-    <main className="mx-auto flex max-w-[1400px] flex-col gap-6 px-6 py-8">
+    <main className="flex w-full flex-col gap-6 px-4 py-8 sm:px-[1.5%] xl:px-[2%]">
       <section className="panel rounded-[1.5rem] p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Admin Results</p>
         <h1 className="mt-2 text-4xl font-semibold text-[#2f241c]">Submitted Student Results</h1>

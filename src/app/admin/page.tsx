@@ -23,7 +23,7 @@ export default async function AdminDashboardPage() {
   const dashboard = await getDashboardData();
 
   return (
-    <main className="mx-auto grid max-w-[1400px] gap-6 px-6 py-8 lg:grid-cols-[1fr_1fr]">
+    <main className="grid w-full gap-6 px-4 py-8 sm:px-[1.5%] xl:px-[2%] lg:grid-cols-[1fr_1fr]">
       <section className="panel rounded-[1.4rem] p-7">
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Admin command center</p>
         <h1 className="mt-3 text-4xl font-semibold text-[#2f241c]">Question intake, test generation, and result monitoring.</h1>
