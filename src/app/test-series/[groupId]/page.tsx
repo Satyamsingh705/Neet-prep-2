@@ -21,7 +21,7 @@ export default async function TestSeriesGroupPage({ params }: { params: Promise<
   }));
 
   return (
-    <main className="mx-auto flex max-w-[1400px] flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-6 sm:py-8">
+    <main className="flex w-full flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-[1.5%] sm:py-8 xl:px-[2%]">
       <section className="panel rounded-none border-x-0 p-4 sm:rounded-[1.5rem] sm:border-x sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>

@@ -2,7 +2,7 @@
 
 export default function LiveArenaLoading() {
   return (
-    <main className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-10 py-10 bg-slate-50 min-h-screen animate-pulse">
+    <main className="flex w-full flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-[1.5%] sm:py-8 xl:px-[2%] bg-slate-50 min-h-screen animate-pulse">
       <div className="flex flex-col gap-12 pb-24">
         {/* Hero skeleton */}
         <section className="relative overflow-hidden rounded-[40px] bg-[#09090b] border border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)]">

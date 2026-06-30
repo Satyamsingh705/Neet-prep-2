@@ -27,7 +27,7 @@ export default async function LiveLeaderboardPage({ params }: { params: Promise<
   const totalMarks = perQuestion * questionCount;
 
   return (
-    <main className="mx-auto flex max-w-[1000px] flex-col gap-8 px-6 py-12">
+    <main className="flex w-full flex-col gap-8 px-4 py-12 sm:px-[1.5%] xl:px-[2%]">
       <section className="text-center">
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Live Rankings</p>
         <h1 className="mt-4 text-4xl font-bold text-[#2f241c] sm:text-5xl">{liveTest.title}</h1>

@@ -8,7 +8,7 @@ export default async function AdminModifyAnswersPage() {
   const tests = await getTestsForListing(undefined, { includeUnpublished: true });
 
   return (
-    <main className="mx-auto max-w-[1200px] px-6 py-8">
+    <main className="w-full px-4 py-8 sm:px-[1.5%] xl:px-[2%]">
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/admin"

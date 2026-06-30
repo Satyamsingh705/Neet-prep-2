@@ -2,7 +2,7 @@
 
 export default function ResultsLoading() {
   return (
-    <main className="mx-auto flex max-w-[1400px] flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-6 sm:py-8 animate-pulse">
+    <main className="flex w-full flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-[1.5%] sm:py-8 xl:px-[2%] animate-pulse">
       <section className="panel rounded-none border-x-0 p-4 sm:rounded-[1.5rem] sm:border-x sm:p-8">
         <div className="h-4 w-32 rounded bg-[#f0e0d0]" />
         <div className="mt-3 h-9 w-72 rounded bg-[#f0e0d0]" />

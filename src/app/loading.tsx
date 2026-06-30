@@ -2,7 +2,7 @@
 
 export default function HomeLoading() {
   return (
-    <main className="mx-auto flex max-w-[1400px] flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-6 sm:py-8 animate-pulse">
+    <main className="flex w-full flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-[1.5%] sm:py-8 xl:px-[2%] animate-pulse">
       {/* Hero panel skeleton */}
       <section className="panel overflow-hidden rounded-none border-x-0 sm:rounded-[1.6rem] sm:border-x">
         <div className="grid gap-6 px-5 py-6 sm:gap-8 sm:px-8 sm:py-8 lg:grid-cols-[1.25fr_0.95fr] lg:px-10 lg:py-10">

@@ -30,7 +30,7 @@ export default async function LiveTestDetailPage({ params }: { params: Promise<{
   }
 
   return (
-    <main className="mx-auto flex max-w-[1000px] flex-col gap-16 px-6 py-20 bg-slate-50 min-h-screen">
+    <main className="flex w-full flex-col gap-16 px-4 py-20 sm:px-[1.5%] xl:px-[2%] bg-slate-50 min-h-screen">
       <section className="text-center space-y-8">
         <div className="flex justify-center">
           {isLive && (

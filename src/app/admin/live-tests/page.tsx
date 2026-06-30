@@ -44,7 +44,7 @@ export default async function AdminLiveTestsPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-[1200px] flex-col gap-8 px-6 py-8">
+    <main className="flex w-full flex-col gap-8 px-4 py-8 sm:px-[1.5%] xl:px-[2%]">
       <section className="panel rounded-[1.5rem] p-8">
         <h1 className="text-3xl font-bold text-[#2f241c]">Manage Live Competitive Tests</h1>
         <p className="mt-2 text-[#6d5a49]">Schedule and monitor real-time challenges for all students.</p>

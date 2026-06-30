@@ -15,7 +15,7 @@ export default async function AdminAttemptResultPage({ params }: { params: Promi
   }
 
   return (
-    <main className="mx-auto flex max-w-[1480px] flex-col gap-6 px-6 py-8">
+    <main className="flex w-full flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-[1.5%] sm:py-8 xl:px-[2%]">
       <div className="flex justify-end">
         <Link href="/admin/results" className="btn-secondary">
           Back To Results

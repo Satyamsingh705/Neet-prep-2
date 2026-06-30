@@ -15,7 +15,7 @@ export default async function StudentAttemptResultPage({ params }: { params: Pro
   }
 
   return (
-    <main className="mx-auto flex max-w-[1480px] flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+    <main className="flex w-full flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-[1.5%] sm:py-8 xl:px-[2%]">
       <div className="flex justify-start">
         <Link href="/results" className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-200 hover:shadow-sm">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
