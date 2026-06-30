@@ -298,10 +298,36 @@ export function ExamClient(props: ExamClientProps) {
         await submitLiveAttemptAction(props.attemptId);
         router.replace(`/live-arena/${props.test.id}/leaderboard`);
       } else {
-        await fetch(`/api/attempts/${props.attemptId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state) });
-        const res = await fetch(`/api/attempts/${props.attemptId}/submit${auto ? "?auto=1" : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state) });
-        if (!res.ok) throw new Error("Submit failed");
-        router.replace(`/attempts/${props.attemptId}/result`);
+        // Submit endpoint already persists answers from the body — no need for a separate PUT.
+        // Retry up to 3 times with exponential backoff for transient pool exhaustion (503).
+        const maxRetries = 3;
+        let lastError: Error | null = null;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          try {
+            const res = await fetch(`/api/attempts/${props.attemptId}/submit${auto ? "?auto=1" : ""}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(state),
+            });
+            if (res.ok) {
+              router.replace(`/attempts/${props.attemptId}/result`);
+              return;
+            }
+            // If server returned 503 (pool exhaustion), retry
+            if (res.status === 503 && attempt < maxRetries) {
+              await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempt)));
+              continue;
+            }
+            throw new Error("Submit failed");
+          } catch (e) {
+            lastError = e instanceof Error ? e : new Error("Submit failed");
+            if (attempt < maxRetries) {
+              await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempt)));
+              continue;
+            }
+          }
+        }
+        throw lastError ?? new Error("Submit failed");
       }
     } catch (e) {
       submittedRef.current = false;

@@ -79,7 +79,7 @@ export function renderQuestionText(text: string): ReactNode {
         finalHtml += block.content; // fallback
       }
     } else {
-      // This is a text block. Run the custom ^ parser ONLY on this text.
+      // This is a text block. Run the custom ^ and _ parser ONLY on this text.
       let textContent = block.content;
       let processedText = "";
       let index = 0;
@@ -104,6 +104,28 @@ export function renderQuestionText(text: string): ReactNode {
           
           if (exponent) {
             processedText += `<sup>${exponent}</sup>`;
+            index = nextIndex;
+            continue;
+          }
+        } else if (textContent[index] === "_") {
+          let subscript = "";
+          let nextIndex = index + 1;
+          
+          if (textContent[nextIndex] === "{") {
+            const closingBraceIndex = textContent.indexOf("}", nextIndex + 1);
+            if (closingBraceIndex !== -1) {
+              subscript = textContent.slice(nextIndex + 1, closingBraceIndex);
+              nextIndex = closingBraceIndex + 1;
+            }
+          } else {
+            while (nextIndex < textContent.length && isSuperscriptCharacter(textContent[nextIndex])) {
+              subscript += textContent[nextIndex];
+              nextIndex += 1;
+            }
+          }
+          
+          if (subscript) {
+            processedText += `<sub>${subscript}</sub>`;
             index = nextIndex;
             continue;
           }

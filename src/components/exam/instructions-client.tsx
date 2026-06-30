@@ -116,13 +116,39 @@ export function InstructionsClient({ testId }: { testId: string }) {
     examWindow.document.close();
 
     try {
-      const response = await fetch(`/api/tests/${testId}/start`, { method: "POST" });
-      const payload = await response.json();
+      const maxRetries = 3;
+      let payload: any;
+      let succeeded = false;
 
-      if (!response.ok) {
+      for (let i = 0; i <= maxRetries; i++) {
+        try {
+          const response = await fetch(`/api/tests/${testId}/start`, { method: "POST" });
+          payload = await response.json();
+
+          if (response.ok) {
+            succeeded = true;
+            break;
+          }
+
+          if (response.status === 503 && i < maxRetries) {
+            await new Promise(r => setTimeout(r, 400 * Math.pow(2, i)));
+            continue;
+          }
+
+          break;
+        } catch (fetchErr) {
+          if (i < maxRetries) {
+            await new Promise(r => setTimeout(r, 400 * Math.pow(2, i)));
+            continue;
+          }
+          throw fetchErr;
+        }
+      }
+
+      if (!succeeded) {
         examWindow.close();
         setIsStarting(false);
-        window.alert(payload.error ?? "Failed to start test.");
+        window.alert(payload?.error ?? "Server is busy. Please try again.");
         return;
       }
 
@@ -132,7 +158,7 @@ export function InstructionsClient({ testId }: { testId: string }) {
     } catch {
       examWindow.close();
       setIsStarting(false);
-      window.alert("Failed to start test.");
+      window.alert("Failed to start test. Please try again.");
     }
   }
 

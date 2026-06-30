@@ -452,10 +452,8 @@ export async function getInstructionData(testId: string) {
 
 export async function startAttempt(testId: string, student?: { id: string; username: string; displayName: string | null }) {
   return withTiming("startAttempt", async () => {
-    let test;
-
-    try {
-      test = await prisma.test.findUnique({
+    const test = await withRetry(() =>
+      prisma.test.findUnique({
         where: { id: testId },
         select: {
           id: true,
@@ -466,13 +464,8 @@ export async function startAttempt(testId: string, student?: { id: string; usern
             },
           },
         },
-      });
-    } catch (error) {
-      if (isDatabaseUnavailableError(error)) {
-        throw error;
-      }
-      throw error;
-    }
+      })
+    );
 
     if (!test) {
       throw new Error("Test not found.");
@@ -482,15 +475,17 @@ export async function startAttempt(testId: string, student?: { id: string; usern
       test.testQuestions.map((row) => [row.questionId, getInitialAnswerState()]),
     );
 
-    const attempt = await prisma.attempt.create({
-      data: {
-        testId,
-        studentId: student?.id,
-        studentName: student?.displayName ?? student?.username,
-        answers,
-      },
-      select: { id: true },
-    });
+    const attempt = await withRetry(() =>
+      prisma.attempt.create({
+        data: {
+          testId,
+          studentId: student?.id,
+          studentName: student?.displayName ?? student?.username,
+          answers,
+        },
+        select: { id: true },
+      })
+    );
 
     return attempt;
   });
@@ -501,8 +496,8 @@ export async function getAttemptData(attemptId: string, studentId?: string, incl
     // Step 1: Lightweight query for attempt state + test metadata (no question content)
     let attemptMeta;
 
-    try {
-      attemptMeta = await prisma.attempt.findFirst({
+    attemptMeta = await withRetry(() =>
+      prisma.attempt.findFirst({
         where: {
           id: attemptId,
           ...(studentId ? { studentId } : {}),
@@ -531,13 +526,8 @@ export async function getAttemptData(attemptId: string, studentId?: string, incl
             },
           },
         },
-      });
-    } catch (error) {
-      if (isDatabaseUnavailableError(error)) {
-        throw error;
-      }
-      throw error;
-    }
+      })
+    );
 
     if (!attemptMeta) {
       return null;
@@ -716,27 +706,28 @@ export async function persistAttempt(params: {
   tabSwitchCount: number;
   totalTimeSpentSeconds: number;
 }) {
-  const attempt = await prisma.attempt.findFirst({
-    where: {
-      id: params.attemptId,
-      ...(params.studentId ? { studentId: params.studentId } : {}),
-    },
-    select: { id: true },
-  });
+  // Use updateMany with compound where to avoid a separate findFirst query.
+  // This cuts DB round-trips from 2 to 1, critical under concurrent load.
+  const result = await withRetry(() =>
+    prisma.attempt.updateMany({
+      where: {
+        id: params.attemptId,
+        ...(params.studentId ? { studentId: params.studentId } : {}),
+      },
+      data: {
+        answers: params.answers,
+        currentQuestionIndex: params.currentQuestionIndex,
+        tabSwitchCount: params.tabSwitchCount,
+        totalTimeSpentSeconds: params.totalTimeSpentSeconds,
+      },
+    })
+  );
 
-  if (!attempt) {
+  if (result.count === 0) {
     throw new Error("Attempt not found.");
   }
 
-  return prisma.attempt.update({
-    where: { id: attempt.id },
-    data: {
-      answers: params.answers,
-      currentQuestionIndex: params.currentQuestionIndex,
-      tabSwitchCount: params.tabSwitchCount,
-      totalTimeSpentSeconds: params.totalTimeSpentSeconds,
-    },
-  });
+  return result;
 }
 
 export async function submitAttempt(attemptId: string, autoSubmitted = false, studentId?: string) {
@@ -764,14 +755,16 @@ export async function submitAttempt(attemptId: string, autoSubmitted = false, st
     attemptData.answers,
   );
 
-  return prisma.attempt.update({
-    where: { id: attemptId },
-    data: {
-      status: autoSubmitted ? AttemptStatus.AUTO_SUBMITTED : AttemptStatus.SUBMITTED,
-      submittedAt: new Date(),
-      result,
-    },
-  });
+  return withRetry(() =>
+    prisma.attempt.update({
+      where: { id: attemptId },
+      data: {
+        status: autoSubmitted ? AttemptStatus.AUTO_SUBMITTED : AttemptStatus.SUBMITTED,
+        submittedAt: new Date(),
+        result,
+      },
+    })
+  );
 }
 
 export async function getLiveArenaData(studentId?: string) {
